@@ -12,6 +12,7 @@ import {
   Server,
   Globe,
   ChevronDown,
+  Radio,
 } from 'lucide-react';
 import { useStudioStore } from '../../store/useStudioStore';
 import { useThemeStore } from '../../store/useThemeStore';
@@ -32,6 +33,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenRenderModal }) => {
   const sceneName = useStudioStore((state) => state.sceneName);
   const comfyUrl = useStudioStore((state) => state.comfyUrl);
   const isRendering = useStudioStore((state) => state.isRendering);
+  const wsStatus = useStudioStore((state) => state.wsStatus);
 
   const { theme, toggleTheme } = useThemeStore();
   const { t, locale, setLocale } = useTranslation();
@@ -196,6 +198,26 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenRenderModal }) => {
             <Moon className="w-3.5 h-3.5 text-secondary-text" />
           )}
         </button>
+
+        {/* WebSocket Real-time Sync Badge */}
+        <div
+          title={`WebSocket Scene Sync: ${wsStatus}`}
+          className="flex items-center space-x-1.5 text-xs bg-surface px-2 py-1 rounded-sm border border-hairline font-mono text-[10px]"
+        >
+          <div
+            className={`w-1.5 h-1.5 rounded-full ${
+              wsStatus === 'connected'
+                ? 'bg-status-ok animate-pulse'
+                : wsStatus === 'connecting'
+                ? 'bg-warning animate-pulse'
+                : 'bg-muted-text'
+            }`}
+          />
+          <Radio className="w-3 h-3 text-secondary-text" />
+          <span className="text-secondary-text uppercase">
+            {wsStatus === 'connected' ? 'LIVE' : wsStatus === 'connecting' ? 'SYNC...' : 'OFFLINE'}
+          </span>
+        </div>
 
         {/* ComfyUI Server Telemetry Badge */}
         <div className="flex items-center space-x-2 text-xs bg-surface px-2 py-1 rounded-sm border border-hairline">

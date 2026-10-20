@@ -12,6 +12,7 @@ from models.scene import (
 )
 from services.validator import validate_physical_scene, check_aabb_collisions, check_floor_contact
 from db.database import get_db_connection
+from routers.events import manager
 
 router = APIRouter(prefix="/v1/scenes", tags=["scenes"])
 
@@ -117,6 +118,11 @@ async def update_scene(scene_id: str, scene: SceneGraphModel, db: aiosqlite.Conn
             (scene.name, scene.model_dump_json(), scene_id),
         )
         await db.commit()
+        await manager.broadcast_to_scene(scene_id, {
+            "type": "SCENE_UPDATED",
+            "scene_id": scene_id,
+            "data": scene.model_dump(),
+        })
         return scene
     finally:
         await db.close()
@@ -174,6 +180,11 @@ async def add_object(scene_id: str, obj: SceneObjectModel, db: aiosqlite.Connect
             (scene.id, scene.name, scene.model_dump_json()),
         )
         await db.commit()
+        await manager.broadcast_to_scene(scene_id, {
+            "type": "OBJECT_ADDED",
+            "scene_id": scene_id,
+            "data": obj.model_dump(),
+        })
         return obj
     finally:
         await db.close()
@@ -190,8 +201,12 @@ async def patch_object(
         async with db.execute("SELECT data_json FROM scenes WHERE id = ?", (scene_id,)) as cursor:
             row = await cursor.fetchone()
             if not row:
-                raise HTTPException(status_code=404, detail=f"Scene '{scene_id}' not found")
-            scene = SceneGraphModel.model_validate_json(row["data_json"])
+                if scene_id == "scene-default":
+                    scene = default_scene("scene-default")
+                else:
+                    raise HTTPException(status_code=404, detail=f"Scene '{scene_id}' not found")
+            else:
+                scene = SceneGraphModel.model_validate_json(row["data_json"])
 
         target_obj = next((o for o in scene.objects if o.id == object_id), None)
         if not target_obj:
@@ -230,6 +245,12 @@ async def patch_object(
             (scene.model_dump_json(), scene_id),
         )
         await db.commit()
+        await manager.broadcast_to_scene(scene_id, {
+            "type": "OBJECT_UPDATED",
+            "scene_id": scene_id,
+            "object_id": object_id,
+            "data": target_obj.model_dump(),
+        })
         return target_obj
     finally:
         await db.close()
@@ -254,6 +275,11 @@ async def delete_object(scene_id: str, object_id: str, db: aiosqlite.Connection 
             (scene.model_dump_json(), scene_id),
         )
         await db.commit()
+        await manager.broadcast_to_scene(scene_id, {
+            "type": "OBJECT_DELETED",
+            "scene_id": scene_id,
+            "object_id": object_id,
+        })
         return {"status": "deleted", "object_id": object_id}
     finally:
         await db.close()
@@ -278,6 +304,11 @@ async def update_camera(scene_id: str, camera: CameraModel, db: aiosqlite.Connec
             (scene.id, scene.name, scene.model_dump_json()),
         )
         await db.commit()
+        await manager.broadcast_to_scene(scene_id, {
+            "type": "CAMERA_UPDATED",
+            "scene_id": scene_id,
+            "data": camera.model_dump(),
+        })
         return camera
     finally:
         await db.close()

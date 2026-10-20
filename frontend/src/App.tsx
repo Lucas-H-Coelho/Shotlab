@@ -7,7 +7,7 @@ import { LightingPanel } from './components/sidebar/LightingPanel';
 import { RenderModal } from './components/render/RenderModal';
 import { useStudioStore } from './store/useStudioStore';
 import { useTranslation } from './i18n';
-import { Camera, Package, Sun } from 'lucide-react';
+import { Camera, Package, Sun, AlertTriangle, X } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'camera' | 'objects' | 'lights'>('camera');
@@ -17,8 +17,16 @@ export const App: React.FC = () => {
   const setActiveView = useStudioStore((state) => state.setActiveView);
   const activeView = useStudioStore((state) => state.activeView);
   const selectObject = useStudioStore((state) => state.selectObject);
+  const initializeScene = useStudioStore((state) => state.initializeScene);
+  const apiError = useStudioStore((state) => state.apiError);
+  const clearApiError = useStudioStore((state) => state.clearApiError);
 
   const { t } = useTranslation();
+
+  // Initialize scene and WebSocket on startup
+  useEffect(() => {
+    initializeScene('scene-default');
+  }, [initializeScene]);
 
   // Global Keyboard Shortcuts (Industry standard 3D & photo shortcuts)
   useEffect(() => {
@@ -109,6 +117,35 @@ export const App: React.FC = () => {
           </div>
         </aside>
       </div>
+
+      {/* Physical Validation & API Error Overlay Banner */}
+      {apiError && (
+        <div className="absolute bottom-4 left-4 max-w-md z-50 bg-surface/95 backdrop-blur border border-tally p-3 rounded-sm shadow-2xl flex items-start space-x-3 text-xs animate-in fade-in">
+          <AlertTriangle className="w-4 h-4 text-tally shrink-0 mt-0.5" />
+          <div className="flex-1 space-y-1">
+            <div className="flex items-center space-x-2">
+              <span className="font-mono font-bold text-[10px] uppercase text-tally tracking-wider">
+                {apiError.code || 'API_VALIDATION_ERROR'}
+              </span>
+              {apiError.objectId && (
+                <span className="font-mono text-[9px] text-muted-text">
+                  ID: {apiError.objectId}
+                </span>
+              )}
+            </div>
+            <p className="text-secondary-text text-[11px] leading-relaxed">
+              {apiError.detail}
+            </p>
+          </div>
+          <button
+            onClick={clearApiError}
+            title="Fechar"
+            className="p-1 text-muted-text hover:text-primary-text rounded transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Generation / Render Modal */}
       <RenderModal

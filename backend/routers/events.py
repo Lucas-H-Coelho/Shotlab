@@ -33,6 +33,8 @@ manager = ConnectionManager()
 
 @router.websocket("/scenes/{scene_id}/events")
 async def scene_events_websocket(websocket: WebSocket, scene_id: str):
+    from routers.scenes import normalize_scene_id
+    scene_id = normalize_scene_id(scene_id)
     await manager.connect(scene_id, websocket)
     try:
         while True:

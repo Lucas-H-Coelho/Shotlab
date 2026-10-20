@@ -63,6 +63,7 @@ export interface StudioLighting {
 export interface SceneGraph {
   id: string;
   name: string;
+  allowIntersections?: boolean;
   camera: CameraSettings;
   lighting: StudioLighting;
   objects: SceneObject[];

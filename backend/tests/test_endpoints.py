@@ -79,3 +79,23 @@ async def test_scene_lifecycle_and_validation():
         assert res_cam.status_code == 200
         assert res_cam.json()["focal_length_mm"] == 50.0
         assert res_cam.json()["f_stop"] == 2.8
+
+
+def test_websocket_broadcast():
+    from starlette.testclient import TestClient
+    client = TestClient(app)
+    with client.websocket_connect("/v1/scenes/scene-default/events") as websocket:
+        # Patch an object via REST
+        patch_res = client.patch(
+            "/v1/scenes/scene-default/objects/hero-product",
+            json={"name": "Hero Renamed via API"}
+        )
+        assert patch_res.status_code == 200
+
+        # Receive WebSocket message
+        message = websocket.receive_json()
+        assert message["type"] == "OBJECT_UPDATED"
+        assert message["scene_id"] == "scene-default"
+        assert message["object_id"] == "hero-product"
+        assert message["data"]["name"] == "Hero Renamed via API"
+
