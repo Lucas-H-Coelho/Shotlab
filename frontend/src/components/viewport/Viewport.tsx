@@ -1,15 +1,23 @@
-import React, { useRef, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import { useStudioStore } from '../../store/useStudioStore';
 import { useThemeStore } from '../../store/useThemeStore';
-import { useTranslation } from '../../i18n';
 import { StudioFloor } from './StudioFloor';
 import { StudioLighting } from './StudioLighting';
 import { SceneMesh } from './SceneMesh';
 import { CameraHelperVisualizer } from './CameraHelperVisualizer';
 import { TransformGizmo } from './TransformGizmo';
+import { ViewfinderHUD } from './ViewfinderHUD';
 import { calculateVerticalFov } from '../../types/scene';
+
+const ThreeContextBridge: React.FC<{ onContext: (ctx: { scene: any; camera: any; renderer: any }) => void }> = ({ onContext }) => {
+  const { scene, camera, gl } = useThree();
+  useEffect(() => {
+    onContext({ scene, camera, renderer: gl });
+  }, [scene, camera, gl, onContext]);
+  return null;
+};
 
 export const Viewport: React.FC = () => {
   const objects = useStudioStore((state) => state.objects);
@@ -17,10 +25,14 @@ export const Viewport: React.FC = () => {
   const cameraSettings = useStudioStore((state) => state.camera);
   const selectObject = useStudioStore((state) => state.selectObject);
   const theme = useThemeStore((state) => state.theme);
-  const { t } = useTranslation();
 
   const [isGizmoDragging, setIsGizmoDragging] = useState(false);
+  const [threeCtx, setThreeCtx] = useState<{ scene: any; camera: any; renderer: any } | null>(null);
   const orbitRef = useRef<any>(null);
+
+  const handleContext = useCallback((ctx: { scene: any; camera: any; renderer: any }) => {
+    setThreeCtx(ctx);
+  }, []);
 
   const verticalFov = calculateVerticalFov(
     cameraSettings.focalLengthMm,
@@ -39,6 +51,7 @@ export const Viewport: React.FC = () => {
         gl={{ antialias: true, preserveDrawingBuffer: true }}
         camera={{ position: [0, 2, 4.2], fov: 45 }}
       >
+        <ThreeContextBridge onContext={handleContext} />
         <color attach="background" args={[backgroundColor]} />
 
         {/* Studio Lighting Setup */}
@@ -84,19 +97,8 @@ export const Viewport: React.FC = () => {
         )}
       </Canvas>
 
-      {/* Viewport Overlay Tag / HUD */}
-      <div className="absolute top-3 left-3 flex items-center space-x-1.5 pointer-events-none font-mono">
-        <span className="px-2 py-0.5 text-[10px] uppercase tracking-wider rounded-sm bg-surface/90 backdrop-blur border border-hairline text-primary-text shadow-sm tabular-nums">
-          {activeView === 'camera'
-            ? `${t.viewport.lensPrefix} ${cameraSettings.focalLengthMm}mm • f/${cameraSettings.fStop}`
-            : t.viewport.editorPerspective}
-        </span>
-        {activeView === 'camera' && (
-          <span className="px-1.5 py-0.5 text-[9px] uppercase tracking-wider rounded-sm bg-tally/20 border border-tally/60 text-tally font-semibold">
-            {t.viewport.gateMaskPrefix} 3:2
-          </span>
-        )}
-      </div>
+      {/* ARRI / Leica Viewfinder HUD, Safe Frames & Composition Guides */}
+      <ViewfinderHUD getThreeContext={() => threeCtx} />
     </div>
   );
 };

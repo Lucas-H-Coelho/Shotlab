@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { CameraSettings, ObjectType, SceneGraph, SceneObject, StudioLighting, TransformMode } from '../types/scene';
+import { CameraSettings, ObjectType, SceneGraph, SceneObject, StudioLighting, TransformMode, ViewfinderSettings } from '../types/scene';
 import { sceneApi } from '../api/client';
 import { sceneWsService, WebSocketStatus, SceneEvent } from '../api/websocket';
 import { fromApiCamera, fromApiObject, fromApiScene, PhysicalValidationError } from '../api/types';
@@ -23,6 +23,7 @@ interface StudioState {
   comfyUrl: string;
   isRendering: boolean;
   renderStatusText: string;
+  viewfinder: ViewfinderSettings;
 
   // Real-time API & WS state
   wsStatus: WebSocketStatus;
@@ -45,6 +46,7 @@ interface StudioState {
   duplicateObject: (id: string) => void;
   setTransformMode: (mode: TransformMode) => void;
   updateCamera: (updates: Partial<CameraSettings>) => void;
+  updateViewfinder: (updates: Partial<ViewfinderSettings>) => void;
   updateLighting: (updates: Partial<StudioLighting>) => void;
   setActiveView: (view: 'editor' | 'camera') => void;
   setSnapToGrid: (snap: boolean) => void;
@@ -134,6 +136,15 @@ const initialObjects: SceneObject[] = [
   },
 ];
 
+const defaultViewfinder: ViewfinderSettings = {
+  showHud: true,
+  showGateMask: true,
+  showRuleOfThirds: false,
+  showCenterCross: true,
+  showGoldenRatio: false,
+  gateMaskOpacity: 0.75,
+};
+
 let cameraDebounceTimer: any = null;
 let wsSubscribed = false;
 
@@ -150,6 +161,7 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   comfyUrl: 'http://localhost:8188',
   isRendering: false,
   renderStatusText: '',
+  viewfinder: defaultViewfinder,
   wsStatus: 'disconnected',
   apiError: null,
 
@@ -423,6 +435,11 @@ export const useStudioStore = create<StudioState>((set, get) => ({
       });
     }, 120);
   },
+
+  updateViewfinder: (updates) =>
+    set((state) => ({
+      viewfinder: { ...state.viewfinder, ...updates },
+    })),
 
   updateLighting: (updates) =>
     set((state) => ({

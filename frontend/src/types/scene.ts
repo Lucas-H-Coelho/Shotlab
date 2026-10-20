@@ -39,6 +39,15 @@ export interface CameraSettings {
   aspectRatio: number;      // e.g. 16/9, 4/3, 1, 3/2, 9/16
 }
 
+export interface ViewfinderSettings {
+  showHud: boolean;
+  showGateMask: boolean;
+  showRuleOfThirds: boolean;
+  showCenterCross: boolean;
+  showGoldenRatio: boolean;
+  gateMaskOpacity: number;
+}
+
 export interface StudioLighting {
   ambientIntensity: number;
   ambientColor: string;
