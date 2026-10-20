@@ -145,6 +145,7 @@ class RenderJobRequest(BaseModel):
     seed: Optional[int] = None
     reference_image_base64: Optional[str] = None
     engine: RenderEngine = Field(default="qwen-2.1", description="Dual engine selector: 'qwen-2.1' or 'moss-image'")
+    scene_id: Optional[str] = Field(default=None, description="Optional target scene ID (defaults to 'scene-default')")
 
 class RenderJobResponse(BaseModel):
     job_id: str
