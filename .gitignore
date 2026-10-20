@@ -11,6 +11,9 @@ __pycache__/
 venv/
 env/
 *.sqlite3
+*.db
+.pytest_cache/
+*.tsbuildinfo
 
 # Node / Vite / Frontend
 node_modules/
