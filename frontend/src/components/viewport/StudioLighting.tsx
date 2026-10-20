@@ -4,20 +4,46 @@ import { useStudioStore } from '../../store/useStudioStore';
 export const StudioLighting: React.FC = () => {
   const lighting = useStudioStore((state) => state.lighting);
 
+  const ambientIntensity = lighting?.ambientIntensity ?? 0.35;
+  const ambientColor = lighting?.ambientColor ?? '#ffffff';
+
+  const keyLight = lighting?.keyLight ?? {
+    position: [2.5, 3.0, 2.5] as [number, number, number],
+    intensity: 1.6,
+    color: '#fffbf0',
+    castShadow: true,
+  };
+
+  const fillLight = lighting?.fillLight ?? {
+    position: [-2.5, 2.0, 2.0] as [number, number, number],
+    intensity: 0.7,
+    color: '#e8f0fe',
+  };
+
+  const rimLight = lighting?.rimLight ?? {
+    position: [0.0, 2.8, -2.5] as [number, number, number],
+    intensity: 1.2,
+    color: '#ffffff',
+  };
+
+  const keyPosition = keyLight.position ?? [2.5, 3.0, 2.5];
+  const fillPosition = fillLight.position ?? [-2.5, 2.0, 2.0];
+  const rimPosition = rimLight.position ?? [0.0, 2.8, -2.5];
+
   return (
     <group>
       {/* Ambient ambient fill */}
       <ambientLight
-        intensity={lighting.ambientIntensity}
-        color={lighting.ambientColor}
+        intensity={ambientIntensity}
+        color={ambientColor}
       />
 
       {/* Key Light (main spotlight/directional light) */}
       <directionalLight
-        position={lighting.keyLight.position}
-        intensity={lighting.keyLight.intensity}
-        color={lighting.keyLight.color}
-        castShadow={lighting.keyLight.castShadow}
+        position={keyPosition}
+        intensity={keyLight.intensity ?? 1.6}
+        color={keyLight.color ?? '#fffbf0'}
+        castShadow={keyLight.castShadow ?? true}
         shadow-mapSize={[2048, 2048]}
         shadow-camera-near={0.5}
         shadow-camera-far={25}
@@ -30,16 +56,16 @@ export const StudioLighting: React.FC = () => {
 
       {/* Fill Light (softer, cool light to fill shadows) */}
       <directionalLight
-        position={lighting.fillLight.position}
-        intensity={lighting.fillLight.intensity}
-        color={lighting.fillLight.color}
+        position={fillPosition}
+        intensity={fillLight.intensity ?? 0.7}
+        color={fillLight.color ?? '#e8f0fe'}
       />
 
       {/* Rim / Hair Light (backlight for edge definition) */}
       <directionalLight
-        position={lighting.rimLight.position}
-        intensity={lighting.rimLight.intensity}
-        color={lighting.rimLight.color}
+        position={rimPosition}
+        intensity={rimLight.intensity ?? 1.2}
+        color={rimLight.color ?? '#ffffff'}
       />
     </group>
   );

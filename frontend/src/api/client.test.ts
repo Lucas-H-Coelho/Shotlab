@@ -5,6 +5,7 @@ import {
   fromApiObject,
   toApiObject,
   fromApiScene,
+  fromApiLighting,
   PhysicalValidationError,
   ApiSceneGraph,
 } from './types';
@@ -144,5 +145,84 @@ describe('Frontend API-First Client & Data Converters', () => {
     expect(scene.name).toBe('Sessão Especial');
     expect(scene.camera.focalLengthMm).toBe(50.0);
     expect(scene.objects[0].material.color).toBe('#94a3b8');
+  });
+
+  it('converts snake_case backend lighting to camelCase StudioLighting with position defined', () => {
+    const apiSceneWithSnakeLighting: ApiSceneGraph = {
+      id: 'scene-default',
+      name: 'Default Scene',
+      allow_intersections: false,
+      camera: {
+        focal_length_mm: 85.0,
+        sensor_width_mm: 36.0,
+        sensor_height_mm: 24.0,
+        f_stop: 1.8,
+        focus_distance_m: 2.2,
+        position: [0.0, 1.4, 2.5],
+        target: [0.0, 0.9, 0.0],
+        aspect_ratio: 1.5,
+      },
+      lighting: {
+        ambient_intensity: 0.4,
+        ambient_color: '#f0f0f0',
+        key_light: {
+          intensity: 1.8,
+          color: '#fffbf0',
+          position: [3.0, 3.5, 2.0],
+          cast_shadow: true,
+        },
+        fill_light: {
+          intensity: 0.8,
+          color: '#e8f0fe',
+          position: [-2.0, 2.2, 1.8],
+          cast_shadow: false,
+        },
+        rim_light: {
+          intensity: 1.5,
+          color: '#ffffff',
+          position: [0.0, 3.0, -2.0],
+          cast_shadow: false,
+        },
+      },
+      objects: [],
+    };
+
+    const scene = fromApiScene(apiSceneWithSnakeLighting);
+
+    expect(scene.lighting).toBeDefined();
+    expect(scene.lighting.ambientIntensity).toBe(0.4);
+    expect(scene.lighting.ambientColor).toBe('#f0f0f0');
+
+    // Key light
+    expect(scene.lighting.keyLight).toBeDefined();
+    expect(scene.lighting.keyLight.position).toEqual([3.0, 3.5, 2.0]);
+    expect(scene.lighting.keyLight.intensity).toBe(1.8);
+    expect(scene.lighting.keyLight.color).toBe('#fffbf0');
+    expect(scene.lighting.keyLight.castShadow).toBe(true);
+
+    // Fill light
+    expect(scene.lighting.fillLight).toBeDefined();
+    expect(scene.lighting.fillLight.position).toEqual([-2.0, 2.2, 1.8]);
+    expect(scene.lighting.fillLight.intensity).toBe(0.8);
+    expect(scene.lighting.fillLight.color).toBe('#e8f0fe');
+
+    // Rim light
+    expect(scene.lighting.rimLight).toBeDefined();
+    expect(scene.lighting.rimLight.position).toEqual([0.0, 3.0, -2.0]);
+    expect(scene.lighting.rimLight.intensity).toBe(1.5);
+    expect(scene.lighting.rimLight.color).toBe('#ffffff');
+  });
+
+  it('provides safe defaults when lighting or subfields are undefined', () => {
+    const partialLighting = fromApiLighting(undefined);
+    expect(partialLighting.keyLight.position).toEqual([2.5, 3.0, 2.5]);
+    expect(partialLighting.fillLight.position).toEqual([-2.5, 2.0, 2.0]);
+    expect(partialLighting.rimLight.position).toEqual([0.0, 2.8, -2.5]);
+    expect(partialLighting.ambientIntensity).toBe(0.35);
+
+    const emptyObjLighting = fromApiLighting({});
+    expect(emptyObjLighting.keyLight.position).toEqual([2.5, 3.0, 2.5]);
+    expect(emptyObjLighting.fillLight.position).toEqual([-2.5, 2.0, 2.0]);
+    expect(emptyObjLighting.rimLight.position).toEqual([0.0, 2.8, -2.5]);
   });
 });
