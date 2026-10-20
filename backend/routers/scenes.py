@@ -1,6 +1,6 @@
 import json
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends
 import aiosqlite
 
@@ -10,6 +10,7 @@ from models.scene import (
     CameraModel,
     UpdateObjectRequest,
 )
+from services.validator import validate_physical_scene, check_aabb_collisions, check_floor_contact
 from db.database import get_db_connection
 
 router = APIRouter(prefix="/v1/scenes", tags=["scenes"])
@@ -18,13 +19,14 @@ def default_scene(scene_id: str, name: str = "Nova Sessão Fotográfica") -> Sce
     return SceneGraphModel(
         id=scene_id,
         name=name,
+        allow_intersections=False,
         camera=CameraModel(),
         objects=[
             SceneObjectModel(
                 id="studio-backdrop",
                 name="Fundo Infinito (Cyc)",
                 type="backdrop",
-                position=[0.0, 0.0, -1.8],
+                position=[0.0, 1.75, -1.8],
                 rotation=[0.0, 0.0, 0.0],
                 scale=[6.0, 3.5, 2.5],
                 material={"color": "#dbe0e8", "roughness": 0.85, "metalness": 0.05},
@@ -106,6 +108,9 @@ async def update_scene(scene_id: str, scene: SceneGraphModel, db: aiosqlite.Conn
             if not row:
                 raise HTTPException(status_code=404, detail=f"Scene '{scene_id}' not found")
         
+        # Physical validation of entire scene
+        validate_physical_scene(scene)
+
         scene.id = scene_id
         await db.execute(
             "UPDATE scenes SET name = ?, data_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
@@ -113,6 +118,30 @@ async def update_scene(scene_id: str, scene: SceneGraphModel, db: aiosqlite.Conn
         )
         await db.commit()
         return scene
+    finally:
+        await db.close()
+
+@router.post("/{scene_id}/validate")
+async def validate_scene(scene_id: str, db: aiosqlite.Connection = Depends(get_db_connection)):
+    """
+    Validates physical scene constraints (floor penetration and volumetric AABB collisions).
+    """
+    scene_id = normalize_scene_id(scene_id)
+    try:
+        async with db.execute("SELECT data_json FROM scenes WHERE id = ?", (scene_id,)) as cursor:
+            row = await cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail=f"Scene '{scene_id}' not found")
+            scene = SceneGraphModel.model_validate_json(row["data_json"])
+
+        validate_physical_scene(scene)
+        return {
+            "status": "valid",
+            "scene_id": scene_id,
+            "objects_count": len(scene.objects),
+            "floor_contact": "ok",
+            "collisions": "none"
+        }
     finally:
         await db.close()
 
@@ -133,6 +162,11 @@ async def add_object(scene_id: str, obj: SceneObjectModel, db: aiosqlite.Connect
         # Check duplicate ID
         if any(o.id == obj.id for o in scene.objects):
             obj.id = f"obj-{uuid.uuid4().hex[:6]}"
+
+        # Validate physics before committing
+        temp_objects = list(scene.objects) + [obj]
+        temp_scene = scene.model_copy(update={"objects": temp_objects})
+        validate_physical_scene(temp_scene, target_object=obj)
 
         scene.objects.append(obj)
         await db.execute(
@@ -163,18 +197,33 @@ async def patch_object(
         if not target_obj:
             raise HTTPException(status_code=404, detail=f"Object '{object_id}' not found in scene")
 
+        # Create updated draft
+        updated_obj = target_obj.model_copy()
         if patch.name is not None:
-            target_obj.name = patch.name
+            updated_obj.name = patch.name
         if patch.position is not None:
-            target_obj.position = patch.position
+            updated_obj.position = patch.position
         if patch.rotation is not None:
-            target_obj.rotation = patch.rotation
+            updated_obj.rotation = patch.rotation
         if patch.scale is not None:
-            target_obj.scale = patch.scale
+            updated_obj.scale = patch.scale
         if patch.material is not None:
-            target_obj.material = patch.material
+            updated_obj.material = patch.material
         if patch.visible is not None:
-            target_obj.visible = patch.visible
+            updated_obj.visible = patch.visible
+
+        # Validate physics with modified object
+        temp_objects = [updated_obj if o.id == object_id else o for o in scene.objects]
+        temp_scene = scene.model_copy(update={"objects": temp_objects})
+        validate_physical_scene(temp_scene, target_object=updated_obj)
+
+        # Apply changes
+        target_obj.name = updated_obj.name
+        target_obj.position = updated_obj.position
+        target_obj.rotation = updated_obj.rotation
+        target_obj.scale = updated_obj.scale
+        target_obj.material = updated_obj.material
+        target_obj.visible = updated_obj.visible
 
         await db.execute(
             "UPDATE scenes SET data_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",

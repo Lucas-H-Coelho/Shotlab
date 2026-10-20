@@ -1,6 +1,7 @@
 import pytest
 import math
 from models.scene import CameraModel, SceneObjectModel
+from services.validator import check_floor_contact
 
 def test_camera_optical_fov_calculation():
     # 50mm on 24mm high sensor (Full-Frame)
@@ -23,17 +24,19 @@ def test_floor_contact_validation():
         position=[0.0, 0.5, 0.0],
         scale=[1.0, 1.0, 1.0],
     )
-    assert obj.position[1] == 0.5
+    assert check_floor_contact(obj) is None
 
-    # Object sinking below floor (Y < 0) MUST raise ValueError
-    with pytest.raises(ValueError, match="Objects must remain at or above floor level"):
-        SceneObjectModel(
-            id="obj-bad",
-            name="Cubo Afundado",
-            type="box",
-            position=[0.0, -0.5, 0.0],
-            scale=[1.0, 1.0, 1.0],
-        )
+    # Object sinking below floor (base at -0.3m < 0) MUST return FLOOR_PENETRATION
+    obj_bad = SceneObjectModel(
+        id="obj-bad",
+        name="Cubo Afundado",
+        type="box",
+        position=[0.0, 0.2, 0.0],
+        scale=[1.0, 1.0, 1.0],
+    )
+    err = check_floor_contact(obj_bad)
+    assert err is not None
+    assert err["code"] == "FLOOR_PENETRATION"
 
 def test_scale_positive_validation():
     with pytest.raises(ValueError, match="Scale dimensions must be strictly positive"):

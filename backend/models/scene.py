@@ -1,6 +1,6 @@
 import math
 from typing import List, Optional, Literal
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 ObjectType = Literal['box', 'cylinder', 'sphere', 'plane', 'table', 'backdrop', 'model']
 
@@ -33,12 +33,9 @@ class SceneObjectModel(BaseModel):
 
     @field_validator("position")
     @classmethod
-    def validate_floor_contact(cls, v: List[float]) -> List[float]:
+    def validate_position_format(cls, v: List[float]) -> List[float]:
         if len(v) != 3:
             raise ValueError("Position must contain exactly 3 coordinates [X, Y, Z]")
-        # Floor contact validation: objects should not sink below floor (Y >= 0)
-        if v[1] < -0.001:
-            raise ValueError(f"Invalid position Y={v[1]}m. Objects must remain at or above floor level (Y >= 0).")
         return v
 
     @field_validator("scale")
@@ -50,6 +47,7 @@ class SceneObjectModel(BaseModel):
             if val <= 0:
                 raise ValueError("Scale dimensions must be strictly positive meters.")
         return v
+
 
 class CameraModel(BaseModel):
     focal_length_mm: float = Field(default=85.0, ge=10.0, le=600.0, description="Focal length in millimeters")
@@ -99,6 +97,10 @@ class StudioLightingModel(BaseModel):
 class SceneGraphModel(BaseModel):
     id: str
     name: str
+    allow_intersections: bool = Field(
+        default=False,
+        description="Whether volumetric collisions/intersections between objects are allowed in this scene"
+    )
     camera: CameraModel = Field(default_factory=CameraModel)
     lighting: StudioLightingModel = Field(default_factory=StudioLightingModel)
     objects: List[SceneObjectModel] = Field(default_factory=list)

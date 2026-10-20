@@ -3,11 +3,13 @@ import json
 import aiosqlite
 from typing import Optional, Dict, Any, List
 
-DB_PATH = os.environ.get("SHOTLAB_DB_PATH", os.path.join(os.path.dirname(__file__), "..", "shotlab.db"))
+def get_db_path() -> str:
+    return os.environ.get("SHOTLAB_DB_PATH", os.path.join(os.path.dirname(__file__), "..", "shotlab.db"))
 
 async def init_db():
-    os.makedirs(os.path.dirname(os.path.abspath(DB_PATH)), exist_ok=True)
-    async with aiosqlite.connect(DB_PATH) as db:
+    db_path = get_db_path()
+    os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
+    async with aiosqlite.connect(db_path) as db:
         await db.execute("""
             CREATE TABLE IF NOT EXISTS scenes (
                 id TEXT PRIMARY KEY,
@@ -32,6 +34,6 @@ async def init_db():
         await db.commit()
 
 async def get_db_connection() -> aiosqlite.Connection:
-    db = await aiosqlite.connect(DB_PATH)
+    db = await aiosqlite.connect(get_db_path())
     db.row_factory = aiosqlite.Row
     return db
