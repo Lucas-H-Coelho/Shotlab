@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TopBar } from './components/toolbar/TopBar';
 import { Viewport } from './components/viewport/Viewport';
+import { SceneSidebar } from './components/sidebar/SceneSidebar';
 import { CameraPanel } from './components/sidebar/CameraPanel';
 import { ObjectPanel } from './components/sidebar/ObjectPanel';
 import { LightingPanel } from './components/sidebar/LightingPanel';
@@ -65,6 +66,9 @@ export const App: React.FC = () => {
 
       {/* Main Studio Area */}
       <div className="flex flex-1 overflow-hidden relative">
+        {/* Left Studio Dock (Scene, Cine Gear, 3D Catalog) */}
+        <SceneSidebar />
+
         {/* Viewport 3D Canvas */}
         <main className="flex-1 h-full relative bg-void">
           <Viewport />
