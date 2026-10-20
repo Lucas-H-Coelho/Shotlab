@@ -226,6 +226,8 @@ async def patch_object(
             updated_obj.material = patch.material
         if patch.visible is not None:
             updated_obj.visible = patch.visible
+        if patch.metadata is not None:
+            updated_obj.metadata = patch.metadata
 
         # Validate physics with modified object
         temp_objects = [updated_obj if o.id == object_id else o for o in scene.objects]
@@ -239,6 +241,7 @@ async def patch_object(
         target_obj.scale = updated_obj.scale
         target_obj.material = updated_obj.material
         target_obj.visible = updated_obj.visible
+        target_obj.metadata = updated_obj.metadata
 
         await db.execute(
             "UPDATE scenes SET data_json = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
