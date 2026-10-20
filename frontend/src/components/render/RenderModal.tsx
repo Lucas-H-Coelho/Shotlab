@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Sparkles, Sliders, CheckCircle, RefreshCw, Download, Image as ImageIcon } from 'lucide-react';
 import { useStudioStore } from '../../store/useStudioStore';
+import { useTranslation } from '../../i18n';
 
 interface RenderModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
   const camera = useStudioStore((state) => state.camera);
   const isRendering = useStudioStore((state) => state.isRendering);
   const setRendering = useStudioStore((state) => state.setRendering);
+  const { t } = useTranslation();
 
   const [prompt, setPrompt] = useState(
     'Frasco de perfume minimalista sobre bancada de mármore polido, iluminação suave lateral de estúdio comercial, reflexos delicados, fotografia de produto de luxo editorial'
@@ -27,7 +29,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
   const lensPromptAddon = `${camera.focalLengthMm}mm prime lens, f/${camera.fStop} aperture, 35mm full-frame optical perspective`;
 
   const handleStartGeneration = async () => {
-    setRendering(true, 'Capturando passe 3D e enviando ao ComfyUI...');
+    setRendering(true, t.render.processing);
     setRenderProgress(15);
 
     try {
@@ -38,7 +40,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
       }
 
       setRenderProgress(35);
-      setRendering(true, 'ComfyUI: Executando Qwen Image 2.1 em modo Edição...');
+      setRendering(true, t.render.processing);
 
       // Call backend API if available
       const response = await fetch('/v1/scenes/default/render', {
@@ -60,7 +62,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
         if (progress >= 100) {
           clearInterval(interval);
           setRenderProgress(100);
-          setRendering(false, 'Geração concluída!');
+          setRendering(false, 'OK');
           if (response && response.ok) {
             response.json().then((data) => setGeneratedImageUrl(data.imageUrl));
           } else {
@@ -71,7 +73,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
         }
       }, 350);
     } catch {
-      setRendering(false, 'Erro ao conectar com ComfyUI');
+      setRendering(false, 'Error');
     }
   };
 
@@ -86,9 +88,9 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
             </div>
             <div>
               <h3 className="text-xs font-mono font-bold text-primary-text uppercase tracking-wider">
-                Motor de Renderização • Qwen Image 2.1
+                {t.render.title}
               </h3>
-              <p className="text-[10px] text-muted-text font-mono">Modo Edição Guiado pela Composição 3D</p>
+              <p className="text-[10px] text-muted-text font-mono">{t.render.subtitle}</p>
             </div>
           </div>
           <button
@@ -104,13 +106,13 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
           {/* Prompt */}
           <div className="space-y-1">
             <label className="text-[10px] font-mono font-semibold text-primary-text uppercase tracking-wider block">
-              Prompt Criativo da Imagem
+              {t.render.promptLabel}
             </label>
             <textarea
               rows={3}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Descreva materiais, texturas, iluminação de estúdio..."
+              placeholder={t.render.promptPlaceholder}
               className="w-full bg-elevated border border-hairline rounded-sm p-2 text-xs text-primary-text focus:outline-none focus:border-optic resize-none leading-relaxed font-sans"
             />
           </div>
@@ -119,7 +121,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
           <div className="bg-elevated border border-hairline rounded-sm p-2 flex items-start space-x-2">
             <Sliders className="w-3.5 h-3.5 text-optic mt-0.5 flex-shrink-0" />
             <div className="text-[11px] space-y-0.5 font-mono">
-              <span className="font-semibold text-primary-text">Injeção Óptica Automática:</span>
+              <span className="font-semibold text-primary-text">{t.render.opticalInjection}</span>
               <p className="text-muted-text text-[10px]">{lensPromptAddon}</p>
             </div>
           </div>
@@ -128,7 +130,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
           <div className="grid grid-cols-3 gap-2 font-mono tabular-nums">
             <div className="bg-elevated p-2 rounded-sm border border-hairline space-y-1">
               <div className="flex justify-between text-[10px] text-secondary-text">
-                <span>Denoise</span>
+                <span>{t.render.denoise}</span>
                 <span className="text-optic font-semibold">{denoise}</span>
               </div>
               <input
@@ -144,7 +146,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
 
             <div className="bg-elevated p-2 rounded-sm border border-hairline space-y-1">
               <div className="flex justify-between text-[10px] text-secondary-text">
-                <span>Passos (Steps)</span>
+                <span>{t.render.steps}</span>
                 <span className="text-optic font-semibold">{steps}</span>
               </div>
               <input
@@ -160,13 +162,13 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
 
             <div className="bg-elevated p-2 rounded-sm border border-hairline space-y-1">
               <div className="flex justify-between text-[10px] text-secondary-text">
-                <span>Seed</span>
+                <span>{t.render.seed}</span>
                 <button
                   onClick={() => setSeed(Math.floor(Math.random() * 1000000))}
                   className="hover:text-optic text-[9px] flex items-center space-x-0.5"
                 >
                   <RefreshCw className="w-2.5 h-2.5" />
-                  <span>Novo</span>
+                  <span>{t.render.newSeed}</span>
                 </button>
               </div>
               <input
@@ -184,7 +186,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
               <div className="flex justify-between text-[10px] text-tally font-medium">
                 <span className="flex items-center space-x-1.5">
                   <RefreshCw className="w-3 h-3 animate-spin" />
-                  <span>Processando passes no ComfyUI...</span>
+                  <span>{t.render.processing}</span>
                 </span>
                 <span className="tabular-nums">{renderProgress}%</span>
               </div>
@@ -202,7 +204,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
               <div className="flex items-center justify-between text-xs text-status-ok font-semibold font-mono">
                 <div className="flex items-center space-x-1.5">
                   <CheckCircle className="w-3.5 h-3.5" />
-                  <span>Take Renderizado (2K)</span>
+                  <span>{t.render.takeReady}</span>
                 </div>
                 <a
                   href={generatedImageUrl}
@@ -210,7 +212,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
                   className="flex items-center space-x-1 px-2.5 py-1 bg-surface text-primary-text border border-hairline rounded-sm hover:border-specular transition-colors text-[10px]"
                 >
                   <Download className="w-3 h-3 text-optic" />
-                  <span>Download 2K</span>
+                  <span>{t.render.download2k}</span>
                 </a>
               </div>
               <div className="flex justify-center bg-black/60 rounded-sm p-1.5 border border-hairline">
@@ -228,7 +230,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-hairline bg-chassis">
           <span className="text-[10px] text-muted-text flex items-center space-x-1 font-mono">
             <ImageIcon className="w-3 h-3 text-optic" />
-            <span>Passe de Geometria 3D + Edição Difusão</span>
+            <span>{t.render.geometryPass}</span>
           </span>
 
           <div className="flex items-center space-x-2">
@@ -236,7 +238,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
               onClick={onClose}
               className="px-3 py-1 rounded-sm text-xs font-mono text-secondary-text hover:text-primary-text hover:bg-elevated transition-colors border border-hairline"
             >
-              Fechar
+              {t.render.close}
             </button>
             <button
               onClick={handleStartGeneration}
@@ -244,7 +246,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
               className="flex items-center space-x-1.5 px-4 py-1 rounded-sm text-xs font-mono uppercase font-semibold text-white bg-tally hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 border border-tally"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>{isRendering ? 'Processando...' : 'Iniciar Gravação'}</span>
+              <span>{isRendering ? t.topbar.capturing : t.render.record}</span>
             </button>
           </div>
         </div>

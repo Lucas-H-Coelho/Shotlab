@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import { useStudioStore } from '../../store/useStudioStore';
 import { useThemeStore } from '../../store/useThemeStore';
+import { useTranslation } from '../../i18n';
 import { StudioFloor } from './StudioFloor';
 import { StudioLighting } from './StudioLighting';
 import { SceneMesh } from './SceneMesh';
@@ -16,6 +17,7 @@ export const Viewport: React.FC = () => {
   const cameraSettings = useStudioStore((state) => state.camera);
   const selectObject = useStudioStore((state) => state.selectObject);
   const theme = useThemeStore((state) => state.theme);
+  const { t } = useTranslation();
 
   const [isGizmoDragging, setIsGizmoDragging] = useState(false);
   const orbitRef = useRef<any>(null);
@@ -85,11 +87,13 @@ export const Viewport: React.FC = () => {
       {/* Viewport Overlay Tag / HUD */}
       <div className="absolute top-3 left-3 flex items-center space-x-1.5 pointer-events-none font-mono">
         <span className="px-2 py-0.5 text-[10px] uppercase tracking-wider rounded-sm bg-surface/90 backdrop-blur border border-hairline text-primary-text shadow-sm tabular-nums">
-          {activeView === 'camera' ? `Lente ${cameraSettings.focalLengthMm}mm • f/${cameraSettings.fStop}` : 'Perspectiva Livre (Editor)'}
+          {activeView === 'camera'
+            ? `${t.viewport.lensPrefix} ${cameraSettings.focalLengthMm}mm • f/${cameraSettings.fStop}`
+            : t.viewport.editorPerspective}
         </span>
         {activeView === 'camera' && (
           <span className="px-1.5 py-0.5 text-[9px] uppercase tracking-wider rounded-sm bg-tally/20 border border-tally/60 text-tally font-semibold">
-            Gate Mask 3:2
+            {t.viewport.gateMaskPrefix} 3:2
           </span>
         )}
       </div>

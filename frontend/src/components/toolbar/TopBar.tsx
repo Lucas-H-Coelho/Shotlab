@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Move,
   RotateCw,
@@ -10,9 +10,12 @@ import {
   Moon,
   Sparkles,
   Server,
+  Globe,
+  ChevronDown,
 } from 'lucide-react';
 import { useStudioStore } from '../../store/useStudioStore';
 import { useThemeStore } from '../../store/useThemeStore';
+import { useTranslation, SUPPORTED_LOCALES, Locale } from '../../i18n';
 import { TransformMode } from '../../types/scene';
 
 interface TopBarProps {
@@ -31,11 +34,26 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenRenderModal }) => {
   const isRendering = useStudioStore((state) => state.isRendering);
 
   const { theme, toggleTheme } = useThemeStore();
+  const { t, locale, setLocale } = useTranslation();
+
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const langMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(e.target as Node)) {
+        setIsLangMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const transformTools: { mode: TransformMode; icon: any; label: string; shortcut: string }[] = [
-    { mode: 'translate', icon: Move, label: 'Mover', shortcut: 'W' },
-    { mode: 'rotate', icon: RotateCw, label: 'Girar', shortcut: 'E' },
-    { mode: 'scale', icon: Maximize2, label: 'Escalar', shortcut: 'R' },
+    { mode: 'translate', icon: Move, label: t.topbar.move, shortcut: 'W' },
+    { mode: 'rotate', icon: RotateCw, label: t.topbar.rotate, shortcut: 'E' },
+    { mode: 'scale', icon: Maximize2, label: t.topbar.scale, shortcut: 'R' },
   ];
 
   return (
@@ -53,7 +71,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenRenderModal }) => {
                 Shotlab
               </span>
               <span className="text-[9px] uppercase px-1 py-0.5 rounded-sm bg-elevated border border-hairline text-secondary-text font-mono tabular-nums">
-                Studio 3D • Optical
+                {t.topbar.subtitle}
               </span>
             </div>
             <p className="text-[10px] text-muted-text truncate max-w-[180px]">{sceneName}</p>
@@ -100,7 +118,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenRenderModal }) => {
             }`}
           >
             <Eye className="w-3.5 h-3.5" />
-            <span>Editor 3D</span>
+            <span>{t.topbar.editorView}</span>
           </button>
           <button
             onClick={() => setActiveView('camera')}
@@ -111,14 +129,14 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenRenderModal }) => {
             }`}
           >
             <Camera className="w-3.5 h-3.5" />
-            <span>Visor Óptico</span>
+            <span>{t.topbar.cameraView}</span>
           </button>
         </div>
 
         {/* Grid Snap Toggle */}
         <button
           onClick={() => setSnapToGrid(!snapToGrid)}
-          title="Ajuste ao Piso e Grid Métrico (10cm)"
+          title={t.topbar.snapGrid}
           className={`p-1.5 rounded-sm border text-xs transition-colors ${
             snapToGrid
               ? 'bg-optic/15 border-optic text-optic'
@@ -129,12 +147,47 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenRenderModal }) => {
         </button>
       </div>
 
-      {/* Right: Theme Switcher, ComfyUI Telemetry & Render Action */}
+      {/* Right: Language Selector, Theme Switcher, ComfyUI Telemetry & Render Action */}
       <div className="flex items-center space-x-2">
+        {/* Language Selector Dropdown */}
+        <div className="relative" ref={langMenuRef}>
+          <button
+            onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+            title="Selecionar Idioma / Language"
+            className="flex items-center space-x-1 px-2 py-1 rounded-sm bg-surface border border-hairline text-secondary-text hover:text-primary-text hover:bg-elevated transition-colors text-xs font-mono"
+          >
+            <Globe className="w-3 h-3 text-optic" />
+            <span className="text-[10px] font-semibold">{locale.split('-')[0].toUpperCase()}</span>
+            <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+          </button>
+
+          {isLangMenuOpen && (
+            <div className="absolute right-0 mt-1 w-32 bg-surface border border-specular rounded-sm shadow-xl z-50 py-1 font-mono text-xs">
+              {SUPPORTED_LOCALES.map((item) => (
+                <button
+                  key={item.code}
+                  onClick={() => {
+                    setLocale(item.code as Locale);
+                    setIsLangMenuOpen(false);
+                  }}
+                  className={`w-full text-left px-2.5 py-1.5 flex items-center justify-between transition-colors ${
+                    locale === item.code
+                      ? 'bg-elevated text-optic font-semibold'
+                      : 'text-secondary-text hover:bg-elevated hover:text-primary-text'
+                  }`}
+                >
+                  <span className="text-[11px]">{item.label}</span>
+                  <span className="text-[9px] opacity-60">[{item.flag}]</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Dark / Light Mode Switcher */}
         <button
           onClick={toggleTheme}
-          title={theme === 'dark' ? 'Alternar para Modo Diurno (Brushed Silver)' : 'Alternar para Modo Vantablack'}
+          title={theme === 'dark' ? t.topbar.themeDark : t.topbar.themeLight}
           className="p-1.5 rounded-sm bg-surface border border-hairline text-secondary-text hover:text-primary-text hover:bg-elevated transition-colors"
         >
           {theme === 'dark' ? (
@@ -161,7 +214,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenRenderModal }) => {
         >
           <Sparkles className="w-3.5 h-3.5" />
           <span className="uppercase text-[11px] font-mono tabular-nums">
-            {isRendering ? 'Processando...' : 'Capturar Take'}
+            {isRendering ? t.topbar.capturing : t.topbar.captureTake}
           </span>
         </button>
       </div>

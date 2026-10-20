@@ -1,17 +1,19 @@
 import React from 'react';
 import { Sun, SunDim, Lightbulb } from 'lucide-react';
 import { useStudioStore } from '../../store/useStudioStore';
+import { useTranslation } from '../../i18n';
 
 export const LightingPanel: React.FC = () => {
   const lighting = useStudioStore((state) => state.lighting);
   const updateLighting = useStudioStore((state) => state.updateLighting);
+  const { t } = useTranslation();
 
   return (
     <div className="flex flex-col space-y-4 text-xs p-3.5 text-secondary-text">
       <div className="flex items-center space-x-2 border-b border-hairline pb-2.5">
         <Sun className="w-3.5 h-3.5 text-optic" />
         <h2 className="font-semibold text-primary-text tracking-wider text-[10px] uppercase font-mono">
-          Iluminação do Estúdio (3 Pontos)
+          {t.lighting.title}
         </h2>
       </div>
 
@@ -20,7 +22,7 @@ export const LightingPanel: React.FC = () => {
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center space-x-1.5">
             <Sun className="w-3 h-3 text-optic" />
-            <span className="font-semibold text-primary-text text-[11px]">Luz Principal (Key Light)</span>
+            <span className="font-semibold text-primary-text text-[11px]">{t.lighting.keyLight}</span>
           </div>
           <span className="font-mono tabular-nums text-optic font-semibold">{lighting.keyLight.intensity.toFixed(1)}</span>
         </div>
@@ -40,7 +42,7 @@ export const LightingPanel: React.FC = () => {
         />
 
         <div className="flex items-center justify-between text-[11px] pt-0.5">
-          <span className="text-muted-text font-mono">Temperatura</span>
+          <span className="text-muted-text font-mono">{t.lighting.temperature}</span>
           <div className="flex items-center space-x-2">
             <input
               type="color"
@@ -62,7 +64,7 @@ export const LightingPanel: React.FC = () => {
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center space-x-1.5">
             <SunDim className="w-3 h-3 text-secondary-text" />
-            <span className="font-semibold text-primary-text text-[11px]">Luz de Preenchimento (Fill)</span>
+            <span className="font-semibold text-primary-text text-[11px]">{t.lighting.fillLight}</span>
           </div>
           <span className="font-mono tabular-nums text-secondary-text font-semibold">{lighting.fillLight.intensity.toFixed(1)}</span>
         </div>
@@ -82,7 +84,7 @@ export const LightingPanel: React.FC = () => {
         />
 
         <div className="flex items-center justify-between text-[11px] pt-0.5">
-          <span className="text-muted-text font-mono">Temperatura</span>
+          <span className="text-muted-text font-mono">{t.lighting.temperature}</span>
           <div className="flex items-center space-x-2">
             <input
               type="color"
@@ -104,7 +106,7 @@ export const LightingPanel: React.FC = () => {
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center space-x-1.5">
             <Lightbulb className="w-3 h-3 text-optic" />
-            <span className="font-semibold text-primary-text text-[11px]">Luz de Recorte (Rim / Hair)</span>
+            <span className="font-semibold text-primary-text text-[11px]">{t.lighting.rimLight}</span>
           </div>
           <span className="font-mono tabular-nums text-optic font-semibold">{lighting.rimLight.intensity.toFixed(1)}</span>
         </div>
@@ -127,7 +129,7 @@ export const LightingPanel: React.FC = () => {
       {/* Ambient Light */}
       <div className="space-y-1">
         <div className="flex justify-between items-center text-xs">
-          <span className="text-secondary-text font-mono text-[10px] uppercase">Luz Ambiente Geral</span>
+          <span className="text-secondary-text font-mono text-[10px] uppercase">{t.lighting.ambientLight}</span>
           <span className="font-mono tabular-nums text-muted-text">{lighting.ambientIntensity.toFixed(2)}</span>
         </div>
         <input

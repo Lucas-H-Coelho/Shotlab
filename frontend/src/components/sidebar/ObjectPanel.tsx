@@ -11,6 +11,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { useStudioStore } from '../../store/useStudioStore';
+import { useTranslation } from '../../i18n';
 import { ObjectType } from '../../types/scene';
 
 export const ObjectPanel: React.FC = () => {
@@ -22,13 +23,15 @@ export const ObjectPanel: React.FC = () => {
   const removeObject = useStudioStore((state) => state.removeObject);
   const duplicateObject = useStudioStore((state) => state.duplicateObject);
 
+  const { t } = useTranslation();
+
   const selectedObject = objects.find((o) => o.id === selectedObjectId);
 
   const addOptions: { type: ObjectType; label: string; icon: any }[] = [
-    { type: 'box', label: 'Cubo', icon: Box },
-    { type: 'cylinder', label: 'Cilindro', icon: Circle },
-    { type: 'sphere', label: 'Esfera', icon: Circle },
-    { type: 'table', label: 'Mesa / Bancada', icon: Layers },
+    { type: 'box', label: t.objects.types.box, icon: Box },
+    { type: 'cylinder', label: t.objects.types.cylinder, icon: Circle },
+    { type: 'sphere', label: t.objects.types.sphere, icon: Circle },
+    { type: 'table', label: t.objects.types.table, icon: Layers },
   ];
 
   return (
@@ -37,7 +40,7 @@ export const ObjectPanel: React.FC = () => {
       <div className="p-3.5 space-y-2">
         <div className="flex items-center space-x-1.5 text-[10px] text-muted-text font-mono font-semibold uppercase tracking-wider">
           <Plus className="w-3 h-3 text-optic" />
-          <span>Primitivas Paramétricas</span>
+          <span>{t.objects.primitivesTitle}</span>
         </div>
         <div className="grid grid-cols-2 gap-1.5">
           {addOptions.map((opt) => {
@@ -61,7 +64,7 @@ export const ObjectPanel: React.FC = () => {
         <div className="flex justify-between items-center text-[10px] text-muted-text font-mono font-semibold uppercase tracking-wider">
           <div className="flex items-center space-x-1.5">
             <Package className="w-3 h-3 text-optic" />
-            <span>Outliner da Cena ({objects.length})</span>
+            <span>{t.objects.outlinerTitle} ({objects.length})</span>
           </div>
         </div>
 
@@ -95,7 +98,7 @@ export const ObjectPanel: React.FC = () => {
                           e.stopPropagation();
                           duplicateObject(obj.id);
                         }}
-                        title="Duplicar"
+                        title={t.objects.duplicate}
                         className="p-0.5 text-secondary-text hover:text-optic transition-colors"
                       >
                         <Copy className="w-3 h-3" />
@@ -105,7 +108,7 @@ export const ObjectPanel: React.FC = () => {
                           e.stopPropagation();
                           removeObject(obj.id);
                         }}
-                        title="Excluir"
+                        title={t.objects.delete}
                         className="p-0.5 text-secondary-text hover:text-tally transition-colors"
                       >
                         <Trash2 className="w-3 h-3" />
@@ -124,7 +127,7 @@ export const ObjectPanel: React.FC = () => {
         <div className="p-3.5 space-y-3.5 overflow-y-auto flex-1">
           <div className="space-y-1">
             <label className="text-[10px] text-muted-text block font-mono font-semibold uppercase tracking-wider">
-              Identificador
+              {t.objects.identifier}
             </label>
             <input
               type="text"
@@ -137,7 +140,7 @@ export const ObjectPanel: React.FC = () => {
           {/* Position (m) */}
           <div className="space-y-1">
             <span className="text-[10px] text-muted-text font-mono font-semibold uppercase tracking-wider block">
-              Posição Métrica (Metros)
+              {t.objects.position}
             </span>
             <div className="grid grid-cols-3 gap-1.5 font-mono tabular-nums">
               <div>
@@ -159,7 +162,7 @@ export const ObjectPanel: React.FC = () => {
                 />
               </div>
               <div>
-                <span className="text-[9px] text-muted-text block uppercase">Y (Piso)</span>
+                <span className="text-[9px] text-muted-text block uppercase">{t.objects.floorY}</span>
                 <input
                   type="number"
                   step="0.05"
@@ -200,11 +203,11 @@ export const ObjectPanel: React.FC = () => {
           {/* Scale (m) */}
           <div className="space-y-1">
             <span className="text-[10px] text-muted-text font-mono font-semibold uppercase tracking-wider block">
-              Dimensões (Metros)
+              {t.objects.dimensions}
             </span>
             <div className="grid grid-cols-3 gap-1.5 font-mono tabular-nums">
               <div>
-                <span className="text-[9px] text-muted-text block uppercase">Largura</span>
+                <span className="text-[9px] text-muted-text block uppercase">{t.objects.width}</span>
                 <input
                   type="number"
                   step="0.05"
@@ -223,7 +226,7 @@ export const ObjectPanel: React.FC = () => {
                 />
               </div>
               <div>
-                <span className="text-[9px] text-muted-text block uppercase">Altura</span>
+                <span className="text-[9px] text-muted-text block uppercase">{t.objects.height}</span>
                 <input
                   type="number"
                   step="0.05"
@@ -242,7 +245,7 @@ export const ObjectPanel: React.FC = () => {
                 />
               </div>
               <div>
-                <span className="text-[9px] text-muted-text block uppercase">Profund.</span>
+                <span className="text-[9px] text-muted-text block uppercase">{t.objects.depth}</span>
                 <input
                   type="number"
                   step="0.05"
@@ -267,7 +270,7 @@ export const ObjectPanel: React.FC = () => {
           <div className="space-y-2.5 pt-2 border-t border-hairline">
             <div className="flex items-center space-x-1.5 text-[10px] text-primary-text font-mono font-semibold uppercase tracking-wider">
               <Palette className="w-3 h-3 text-optic" />
-              <span>Material & Superfície</span>
+              <span>{t.objects.materialTitle}</span>
             </div>
 
             <div className="flex items-center space-x-2">
@@ -290,7 +293,7 @@ export const ObjectPanel: React.FC = () => {
             <div className="space-y-1.5 text-xs">
               <div>
                 <div className="flex justify-between text-muted-text text-[10px] font-mono">
-                  <span>Rugosidade (Roughness)</span>
+                  <span>{t.objects.roughness}</span>
                   <span className="tabular-nums text-primary-text">{selectedObject.material.roughness.toFixed(2)}</span>
                 </div>
                 <input
@@ -309,7 +312,7 @@ export const ObjectPanel: React.FC = () => {
               </div>
               <div>
                 <div className="flex justify-between text-muted-text text-[10px] font-mono">
-                  <span>Metalização (Metalness)</span>
+                  <span>{t.objects.metalness}</span>
                   <span className="tabular-nums text-primary-text">{selectedObject.material.metalness.toFixed(2)}</span>
                 </div>
                 <input

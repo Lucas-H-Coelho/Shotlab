@@ -6,6 +6,7 @@ import { ObjectPanel } from './components/sidebar/ObjectPanel';
 import { LightingPanel } from './components/sidebar/LightingPanel';
 import { RenderModal } from './components/render/RenderModal';
 import { useStudioStore } from './store/useStudioStore';
+import { useTranslation } from './i18n';
 import { Camera, Package, Sun } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -16,6 +17,8 @@ export const App: React.FC = () => {
   const setActiveView = useStudioStore((state) => state.setActiveView);
   const activeView = useStudioStore((state) => state.activeView);
   const selectObject = useStudioStore((state) => state.selectObject);
+
+  const { t } = useTranslation();
 
   // Global Keyboard Shortcuts (Industry standard 3D & photo shortcuts)
   useEffect(() => {
@@ -72,7 +75,7 @@ export const App: React.FC = () => {
               }`}
             >
               <Camera className="w-3 h-3" />
-              <span>Câmera</span>
+              <span>{t.sidebar.camera}</span>
             </button>
             <button
               onClick={() => setActiveTab('objects')}
@@ -83,7 +86,7 @@ export const App: React.FC = () => {
               }`}
             >
               <Package className="w-3 h-3" />
-              <span>Objetos</span>
+              <span>{t.sidebar.objects}</span>
             </button>
             <button
               onClick={() => setActiveTab('lights')}
@@ -94,7 +97,7 @@ export const App: React.FC = () => {
               }`}
             >
               <Sun className="w-3 h-3" />
-              <span>Luzes</span>
+              <span>{t.sidebar.lights}</span>
             </button>
           </div>
 
