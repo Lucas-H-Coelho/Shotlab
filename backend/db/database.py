@@ -3,8 +3,14 @@ import json
 import aiosqlite
 from typing import Optional, Dict, Any, List
 
+from core.config import settings
+
+
 def get_db_path() -> str:
-    return os.environ.get("SHOTLAB_DB_PATH", os.path.join(os.path.dirname(__file__), "..", "shotlab.db"))
+    default_path = settings.database_path
+    if not os.path.isabs(default_path):
+        default_path = os.path.join(os.path.dirname(__file__), "..", default_path)
+    return os.environ.get("DATABASE_PATH", os.environ.get("SHOTLAB_DB_PATH", default_path))
 
 async def init_db():
     db_path = get_db_path()
