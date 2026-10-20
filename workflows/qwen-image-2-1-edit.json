@@ -1,0 +1,143 @@
+{
+  "1": {
+    "inputs": {
+      "unet_name": "qwen_image_2.1_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Qwen 2.1 DiT (INT8)"
+    }
+  },
+  "2": {
+    "inputs": {
+      "clip_name": "qwen3.5_9b_qwen_image_2.1_pe_i2i.int8_convrot.safetensors",
+      "type": "qwen_image"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load Qwen 3.5 PE (I2I Text Encoder)"
+    }
+  },
+  "3": {
+    "inputs": {
+      "vae_name": "qwen_image_2.1_vae_bf16.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load Qwen 2.1 VAE (64 Channels)"
+    }
+  },
+  "4": {
+    "inputs": {
+      "model": [
+        "1",
+        0
+      ],
+      "lora_name": "Qwen-Image-Lightning-4steps-V1.0.safetensors",
+      "strength_model": 1.0
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Qwen Lightning 4-Steps LoRA"
+    }
+  },
+  "5": {
+    "inputs": {
+      "image": "shotlab_input_pass_3d.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Shotlab 3D Pass (Clay or RGB Render)"
+    }
+  },
+  "6": {
+    "inputs": {
+      "clip": [
+        "2",
+        0
+      ],
+      "prompt": "Commercial studio photograph of a product resting on a dark marble countertop, shot on 85mm prime lens at f/1.8 aperture, 2.2m focus distance, studio three-point lighting with 5600K key light, subtle rim separation, authentic caustics and soft contact shadows, ultra-sharp optical textures, no plastic look, no AI slop.",
+      "negative_prompt": "blurry, out of focus, deformed geometry, lowres, cartoon, plastic skin, oversaturated, chromatic aberration, ai slop, watermark",
+      "resolution": 1024,
+      "vae": [
+        "3",
+        0
+      ],
+      "image_1": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImage21",
+    "_meta": {
+      "title": "Text & Reference Encode (Qwen Image 2.1)",
+      "parameter_placeholders": {
+        "prompt": "{{OPTICAL_PROMPT}}",
+        "negative_prompt": "{{NEGATIVE_PROMPT}}",
+        "resolution": 1024,
+        "width": 1024,
+        "height": 1024
+      }
+    }
+  },
+  "7": {
+    "inputs": {
+      "model": [
+        "4",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "6",
+        1
+      ],
+      "latent_image": [
+        "6",
+        2
+      ],
+      "seed": 42,
+      "steps": 4,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 0.75
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler (Lightning 4-Steps, Denoise 0.75)"
+    }
+  },
+  "8": {
+    "inputs": {
+      "samples": [
+        "7",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode (64 Channels)"
+    }
+  },
+  "9": {
+    "inputs": {
+      "filename_prefix": "Shotlab_Qwen21_Edit",
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Rendered Image"
+    }
+  }
+}

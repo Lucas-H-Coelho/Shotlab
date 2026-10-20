@@ -1,0 +1,39 @@
+{
+  "width": 1024,
+  "height": 1024,
+  "bbox_coord_space": "abs",
+  "bbox_format": "xyxy",
+  "summary": {
+    "meta": [
+      "commercial product photography",
+      "luxury cosmetic",
+      "studio lighting"
+    ],
+    "canvas": "single",
+    "caption": "A high-end commercial studio product shot of a luxury glass perfume bottle standing on a polished dark marble countertop. Photographed on an 85mm portrait telephoto lens at f/1.8 aperture with critical focus locked at 2.2m on the brass sprayer nozzle. Creamy circular background bokeh with delicate warm caustic reflections and clean studio contact shadows."
+  },
+  "items": [
+    {
+      "label": "text",
+      "caption": "Large refined serif brand title in metallic champagne gold lettering centered at the top.",
+      "text": "AURA BOTANICA",
+      "bbox": [256, 96, 768, 208]
+    },
+    {
+      "label": "text",
+      "caption": "Small uppercase tracking subtitle centered directly underneath the main title.",
+      "text": "EXTRAIT DE PARFUM",
+      "bbox": [320, 208, 704, 256]
+    },
+    {
+      "label": "object",
+      "caption": "A heavy dark polished marble countertop slab with subtle white veining and soft reflective surface.",
+      "bbox": [96, 608, 928, 976]
+    },
+    {
+      "label": "object",
+      "caption": "An exquisite cylindrical fluted glass perfume bottle filled with amber fragrance liquid, featuring a brushed brass collar and magnetic cap, casting gentle caustics on the stone surface.",
+      "bbox": [384, 272, 640, 752]
+    }
+  ]
+}
