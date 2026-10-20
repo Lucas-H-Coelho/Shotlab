@@ -26,6 +26,7 @@ export interface SceneObject {
   };
   visible: boolean;
   locked?: boolean;
+  metadata?: Record<string, any>;
 }
 
 export interface CameraSettings {
@@ -37,6 +38,19 @@ export interface CameraSettings {
   position: [number, number, number];
   target: [number, number, number];
   aspectRatio: number;      // e.g. 16/9, 4/3, 1, 3/2, 9/16
+
+  // Pro Exposure & Optical Realism settings
+  iso?: number;                                     // default 100 (50..6400)
+  shutterSpeed?: string;                            // default '1/250'
+  sensorFit?: 'AUTO' | 'HORIZONTAL' | 'VERTICAL';  // default 'AUTO'
+  shiftX?: number;                                 // default 0 (-0.50..+0.50)
+  shiftY?: number;                                 // default 0 (-0.50..+0.50)
+  apertureBlades?: number;                         // default 9 (5..18)
+  anamorphicSqueeze?: number;                      // default 1.0 (1.0..2.0)
+  halation?: number;                               // default 0.15 (0..1)
+  chromaticAberration?: number;                    // default 0.05 (0..0.5)
+  vignetting?: number;                             // default 0.20 (0..1)
+  filmGrain?: number;                              // default 0.10 (0..1)
 }
 
 export interface ViewfinderSettings {
