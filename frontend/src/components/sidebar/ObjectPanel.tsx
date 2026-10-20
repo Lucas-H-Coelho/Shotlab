@@ -171,7 +171,7 @@ export const ObjectPanel: React.FC = () => {
                     updateObject(selectedObject.id, {
                       position: [
                         selectedObject.position[0],
-                        Math.max(0, Number(e.target.value)),
+                        Number(e.target.value),
                         selectedObject.position[2],
                       ],
                     })

@@ -300,33 +300,36 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     let position: [number, number, number] = [0, 0.25, 0];
     let color = '#94a3b8';
 
+    const xOffset = 0.8 + 0.2 * Math.max(0, state.objects.length - 3);
+
     switch (type) {
       case 'box':
         name = `Cubo ${state.objects.length + 1}`;
-        position = [0, 0.25, 0];
+        position = [xOffset, 0.25, 0];
         scale = [0.5, 0.5, 0.5];
         color = '#38bdf8';
         break;
       case 'cylinder':
         name = `Cilindro ${state.objects.length + 1}`;
-        position = [0, 0.4, 0];
+        position = [xOffset, 0.4, 0];
         scale = [0.6, 0.8, 0.6];
         color = '#a855f7';
         break;
       case 'sphere':
         name = `Esfera ${state.objects.length + 1}`;
-        position = [0, 0.3, 0];
+        position = [xOffset, 0.3, 0];
         scale = [0.6, 0.6, 0.6];
         color = '#f59e0b';
         break;
       case 'table':
         name = `Mesa / Bancada ${state.objects.length + 1}`;
-        position = [0, 0.45, 0];
+        position = [xOffset + 0.4, 0.45, 0];
         scale = [1.2, 0.9, 0.8];
         color = '#78716c';
         break;
       default:
         name = `Item ${state.objects.length + 1}`;
+        position = [xOffset, 0.25, 0];
     }
 
     const newObject: SceneObject = {

@@ -21,6 +21,8 @@ dist/
 build/
 .next/
 *.log
+playwright-report/
+test-results/
 
 # Environment variables
 .env

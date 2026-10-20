@@ -18,4 +18,8 @@ export default defineConfig({
       },
     },
   },
+  // @ts-ignore
+  test: {
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+  },
 });
