@@ -2,7 +2,7 @@
 Shotlab Services Package
 """
 
-from services import comfyui_client, optics, validator
+from services import comfyui_client, lighting_studio, optics, validator
 from services.comfyui_client import (
     ComfyUIClient,
     ComfyUIError,
@@ -21,11 +21,24 @@ from services.validator import (
     check_floor_contact,
     validate_physical_scene,
 )
+from services.lighting_studio import (
+    LIGHT_MODIFIERS,
+    GEL_PRESETS,
+    LightModifier,
+    GelPreset,
+    SetPlanDataResponse,
+    generate_set_plan_data,
+    generate_set_plan_svg,
+    kelvin_to_srgb,
+    kelvin_to_linear_rgb,
+    calculate_light_geometry,
+)
 
 __all__ = [
     "validator",
     "optics",
     "comfyui_client",
+    "lighting_studio",
     "ComfyUIClient",
     "ComfyUIError",
     "ComfyUIOfflineError",
@@ -40,4 +53,14 @@ __all__ = [
     "check_aabb_collisions",
     "check_floor_contact",
     "validate_physical_scene",
+    "LIGHT_MODIFIERS",
+    "GEL_PRESETS",
+    "LightModifier",
+    "GelPreset",
+    "SetPlanDataResponse",
+    "generate_set_plan_data",
+    "generate_set_plan_svg",
+    "kelvin_to_srgb",
+    "kelvin_to_linear_rgb",
+    "calculate_light_geometry",
 ]

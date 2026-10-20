@@ -276,3 +276,28 @@ async def test_mcp_unknown_tool_and_invalid_params():
     msg = {"jsonrpc": "2.0", "id": 99, "method": "tools/call", "params": {}}
     resp = await server.handle_message(msg)
     assert resp["error"]["code"] == -32602
+
+
+@pytest.mark.anyio
+async def test_mcp_set_plan_and_lighting_modifiers():
+    """Validates get_set_plan and list_lighting_modifiers tools over MCP."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        api_client = ShotlabAPIClient(client=ac)
+        server = ShotlabMCPServer(client=api_client)
+
+        # 1. list_lighting_modifiers
+        res_mods = await server.call_tool("list_lighting_modifiers", {})
+        assert res_mods["isError"] is False
+        mods_data = json.loads(res_mods["content"][0]["text"])
+        assert "modifiers" in mods_data
+        assert "creative_gels" in mods_data
+
+        # 2. get_set_plan
+        res_plan = await server.call_tool("get_set_plan", {"scene_id": "default"})
+        assert res_plan["isError"] is False
+        plan_data = json.loads(res_plan["content"][0]["text"])
+        assert plan_data["scene_id"] == "scene-default"
+        assert "camera" in plan_data
+        assert "lighting_analysis" in plan_data
+        assert "svg" in plan_data
+

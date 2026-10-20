@@ -411,6 +411,37 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
             "required": ["job_id"],
         },
     },
+    {
+        "name": "get_set_plan",
+        "description": (
+            "Retrieve structured technical 2D Top-Down Set Plan (Set.a.Light 3D inspired) "
+            "including real physical distances in meters from camera and lights to the primary subject, "
+            "Key/Fill/Rim angles (azimuth and elevation in degrees), lighting ratio, and ready-to-display vector SVG blueprint."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "scene_id": {
+                    "type": "string",
+                    "description": "Target scene ID (e.g. 'default' or 'scene-default').",
+                    "default": "default",
+                },
+            },
+            "required": ["scene_id"],
+        },
+    },
+    {
+        "name": "list_lighting_modifiers",
+        "description": (
+            "List photographic light modifiers (Softbox, Octabox, Stripbox, Beauty Dish, Fresnel Spot) "
+            "with physical dimensions in meters, beam angles, EV stop changes, and creative gels/Kelvin presets."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    },
 ]
 
 
@@ -707,6 +738,14 @@ class ShotlabAPIClient:
         """Fetches status and result of a render job."""
         return await self._request("GET", f"/v1/jobs/{job_id}")
 
+    async def get_set_plan(self, scene_id: str = "default") -> Dict[str, Any]:
+        """Fetches 2D Top-Down Set Plan technical data and vector SVG."""
+        return await self._request("GET", f"/v1/scenes/{scene_id}/set-plan")
+
+    async def list_lighting_modifiers(self) -> Dict[str, Any]:
+        """Lists photographic modifiers and Kelvin/gels presets."""
+        return await self._request("GET", "/v1/lighting/modifiers")
+
 
 # ============================================================================
 # Shotlab MCP Server Implementation
@@ -805,6 +844,11 @@ class ShotlabMCPServer:
             )
         elif name == "get_render_status":
             res = await self.client.get_render_status(job_id=args["job_id"])
+        elif name == "get_set_plan":
+            scene_id = args.get("scene_id", "default")
+            res = await self.client.get_set_plan(scene_id=scene_id)
+        elif name == "list_lighting_modifiers":
+            res = await self.client.list_lighting_modifiers()
         else:
             return {
                 "content": [{"type": "text", "text": f"UNKNOWN_TOOL: Tool '{name}' does not exist on this server."}],
