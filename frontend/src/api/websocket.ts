@@ -7,7 +7,9 @@ export type SceneEvent =
   | { type: 'OBJECT_ADDED'; scene_id: string; data: any }
   | { type: 'OBJECT_UPDATED'; scene_id: string; object_id: string; data: any }
   | { type: 'OBJECT_DELETED'; scene_id: string; object_id: string }
-  | { type: 'CAMERA_UPDATED'; scene_id: string; data: any };
+  | { type: 'CAMERA_UPDATED'; scene_id: string; data: any }
+  | { type: 'RENDER_PROGRESS'; scene_id?: string; data: any }
+  | { type: 'RENDER_COMPLETED'; scene_id?: string; data: any };
 
 export type SceneEventListener = (event: SceneEvent) => void;
 export type StatusListener = (status: WebSocketStatus) => void;

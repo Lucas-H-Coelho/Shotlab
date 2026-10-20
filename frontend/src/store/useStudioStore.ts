@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { CameraSettings, ObjectType, SceneGraph, SceneObject, StudioLighting, TransformMode, ViewfinderSettings } from '../types/scene';
+import { CameraSettings, ComparisonMode, ObjectType, SceneGraph, SceneObject, ShotTake, StudioLighting, TransformMode, ViewfinderSettings } from '../types/scene';
 import { sceneApi } from '../api/client';
 import { sceneWsService, WebSocketStatus, SceneEvent } from '../api/websocket';
 import { fromApiCamera, fromApiObject, fromApiScene, PhysicalValidationError } from '../api/types';
@@ -24,6 +24,22 @@ interface StudioState {
   isRendering: boolean;
   renderStatusText: string;
   viewfinder: ViewfinderSettings;
+
+  // Shot Gallery & Comparison Mode (Vizcom / Krea inspired)
+  takes: ShotTake[];
+  activeTakeId: string | null;
+  comparisonMode: ComparisonMode;
+  splitPosition: number; // 0..1 (default 0.5)
+  onionOpacity: number; // 0..1 (default 0.5)
+
+  // Actions for Takes & Comparison
+  addTake: (take: Omit<ShotTake, 'id' | 'timestamp'> & { id?: string; timestamp?: number }) => ShotTake;
+  setActiveTakeId: (id: string | null) => void;
+  setComparisonMode: (mode: ComparisonMode) => void;
+  setSplitPosition: (pos: number) => void;
+  setOnionOpacity: (opacity: number) => void;
+  deleteTake: (id: string) => void;
+  restoreTakeCamera: (takeId: string) => void;
 
   // Real-time API & WS state
   wsStatus: WebSocketStatus;
@@ -162,6 +178,11 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   isRendering: false,
   renderStatusText: '',
   viewfinder: defaultViewfinder,
+  takes: [],
+  activeTakeId: null,
+  comparisonMode: 'none',
+  splitPosition: 0.5,
+  onionOpacity: 0.5,
   wsStatus: 'disconnected',
   apiError: null,
 
@@ -194,6 +215,29 @@ export const useStudioStore = create<StudioState>((set, get) => ({
             break;
           case 'SCENE_UPDATED':
             state.applyRemoteSceneUpdate(fromApiScene(event.data));
+            break;
+          case 'RENDER_PROGRESS':
+            set({
+              isRendering: true,
+              renderStatusText: `${event.data?.progress ?? 0}%`,
+            });
+            break;
+          case 'RENDER_COMPLETED':
+            set({ isRendering: false, renderStatusText: 'Concluído' });
+            if (event.data?.imageUrl) {
+              const currentCamera = get().camera;
+              const newTake = get().addTake({
+                name: `Take #${get().takes.length + 1}`,
+                imageUrl: event.data.imageUrl,
+                prompt: event.data.prompt || 'Composição Studio 3D',
+                engine: event.data.engine || 'qwen-image-2-1',
+                denoise: event.data.denoise ?? 0.85,
+                seed: event.data.seed ?? 123456,
+                steps: event.data.steps ?? 25,
+                camera: { ...currentCamera },
+              });
+              set({ activeTakeId: newTake.id, comparisonMode: 'split' });
+            }
             break;
         }
       });
@@ -464,4 +508,57 @@ export const useStudioStore = create<StudioState>((set, get) => ({
       objects: scene.objects,
       selectedObjectId: scene.objects.length > 0 ? scene.objects[0].id : null,
     }),
+
+  // Takes & Comparison Actions
+  addTake: (take) => {
+    const id = take.id || `take-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    const newTake: ShotTake = {
+      ...take,
+      id,
+      timestamp: take.timestamp || Date.now(),
+      name: take.name || `Take #${get().takes.length + 1}`,
+    };
+    set((state) => ({
+      takes: [newTake, ...state.takes],
+      activeTakeId: id,
+      comparisonMode: state.comparisonMode === 'none' ? 'split' : state.comparisonMode,
+    }));
+    return newTake;
+  },
+
+  setActiveTakeId: (id) =>
+    set((state) => ({
+      activeTakeId: id,
+      comparisonMode: id && state.comparisonMode === 'none' ? 'split' : state.comparisonMode,
+    })),
+
+  setComparisonMode: (mode) => set({ comparisonMode: mode }),
+
+  setSplitPosition: (pos) => {
+    const clamped = Math.max(0.02, Math.min(0.98, pos));
+    set({ splitPosition: clamped });
+  },
+
+  setOnionOpacity: (opacity) => {
+    const clamped = Math.max(0.0, Math.min(1.0, opacity));
+    set({ onionOpacity: clamped });
+  },
+
+  deleteTake: (id) =>
+    set((state) => {
+      const remaining = state.takes.filter((t) => t.id !== id);
+      const newActive = state.activeTakeId === id ? (remaining.length > 0 ? remaining[0].id : null) : state.activeTakeId;
+      return {
+        takes: remaining,
+        activeTakeId: newActive,
+        comparisonMode: newActive ? state.comparisonMode : 'none',
+      };
+    }),
+
+  restoreTakeCamera: (takeId) => {
+    const take = get().takes.find((t) => t.id === takeId);
+    if (take) {
+      get().updateCamera(take.camera);
+    }
+  },
 }));

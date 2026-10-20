@@ -48,6 +48,22 @@ export interface ViewfinderSettings {
   gateMaskOpacity: number;
 }
 
+export type ComparisonMode = 'none' | 'split' | 'onion' | 'full';
+
+export interface ShotTake {
+  id: string;
+  name: string;
+  timestamp: number;
+  imageUrl: string;
+  referenceUrl?: string;
+  prompt: string;
+  engine: 'qwen-image-2-1' | 'moss-image';
+  denoise: number;
+  seed: number;
+  steps: number;
+  camera: CameraSettings;
+}
+
 export interface StudioLighting {
   ambientIntensity: number;
   ambientColor: string;

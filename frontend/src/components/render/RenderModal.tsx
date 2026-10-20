@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Sparkles, Sliders, CheckCircle, RefreshCw, Download, Image as ImageIcon } from 'lucide-react';
+import { X, Sparkles, Sliders, CheckCircle, Download, Image as ImageIcon, Columns, Cpu } from 'lucide-react';
 import { useStudioStore } from '../../store/useStudioStore';
 import { useTranslation } from '../../i18n';
 
@@ -12,16 +12,22 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
   const camera = useStudioStore((state) => state.camera);
   const isRendering = useStudioStore((state) => state.isRendering);
   const setRendering = useStudioStore((state) => state.setRendering);
+  const addTake = useStudioStore((state) => state.addTake);
+  const setComparisonMode = useStudioStore((state) => state.setComparisonMode);
+  const setActiveTakeId = useStudioStore((state) => state.setActiveTakeId);
+  const takes = useStudioStore((state) => state.takes);
   const { t } = useTranslation();
 
   const [prompt, setPrompt] = useState(
     'Frasco de perfume minimalista sobre bancada de mármore polido, iluminação suave lateral de estúdio comercial, reflexos delicados, fotografia de produto de luxo editorial'
   );
+  const [engine, setEngine] = useState<'qwen-image-2-1' | 'moss-image'>('qwen-image-2-1');
   const [denoise, setDenoise] = useState(0.85);
   const [steps, setSteps] = useState(25);
   const [seed, setSeed] = useState(Math.floor(Math.random() * 1000000));
   const [renderProgress, setRenderProgress] = useState(0);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [createdTakeId, setCreatedTakeId] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -50,6 +56,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
           prompt: `${prompt}, ${lensPromptAddon}`,
           camera: camera,
           referenceImage: referenceDataUrl,
+          engine,
           steps,
           denoise,
           seed,
@@ -58,23 +65,60 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
 
       let progress = 40;
       const interval = setInterval(() => {
-        progress += 15;
+        progress += 20;
         if (progress >= 100) {
           clearInterval(interval);
           setRenderProgress(100);
           setRendering(false, 'OK');
+
+          const finalImg = referenceDataUrl;
           if (response && response.ok) {
-            response.json().then((data) => setGeneratedImageUrl(data.imageUrl));
+            response.json().then((data) => {
+              const url = data.imageUrl || finalImg;
+              setGeneratedImageUrl(url);
+              const newTake = addTake({
+                name: `Take #${takes.length + 1}`,
+                imageUrl: url,
+                referenceUrl: referenceDataUrl,
+                prompt,
+                engine,
+                denoise,
+                seed,
+                steps,
+                camera: { ...camera },
+              });
+              setCreatedTakeId(newTake.id);
+            });
           } else {
-            setGeneratedImageUrl(referenceDataUrl);
+            setGeneratedImageUrl(finalImg);
+            const newTake = addTake({
+              name: `Take #${takes.length + 1}`,
+              imageUrl: finalImg,
+              referenceUrl: referenceDataUrl,
+              prompt,
+              engine,
+              denoise,
+              seed,
+              steps,
+              camera: { ...camera },
+            });
+            setCreatedTakeId(newTake.id);
           }
         } else {
           setRenderProgress(progress);
         }
-      }, 350);
+      }, 250);
     } catch {
       setRendering(false, 'Error');
     }
+  };
+
+  const handleCompareInViewport = () => {
+    if (createdTakeId) {
+      setActiveTakeId(createdTakeId);
+    }
+    setComparisonMode('split');
+    onClose();
   };
 
   return (
@@ -103,6 +147,47 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
 
         {/* Body */}
         <div className="p-4 space-y-3.5 overflow-y-auto flex-1 text-xs">
+          {/* Engine Selector (Dual-Engine: Qwen Image 2.1 vs MOSS-Image) */}
+          <div className="space-y-1">
+            <label className="text-[10px] font-mono font-semibold text-primary-text uppercase tracking-wider flex items-center space-x-1">
+              <Cpu className="w-3 h-3 text-optic" />
+              <span>Motor de Geração (Dual-Engine)</span>
+            </label>
+            <div className="grid grid-cols-2 gap-2 font-mono text-xs">
+              <button
+                type="button"
+                onClick={() => setEngine('qwen-image-2-1')}
+                className={`p-2.5 rounded-sm border text-left transition-all ${
+                  engine === 'qwen-image-2-1'
+                    ? 'border-optic bg-elevated text-primary-text shadow-sm'
+                    : 'border-hairline bg-surface/50 text-secondary-text hover:border-hairline hover:text-primary-text'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-optic">Qwen Image 2.1</span>
+                  <span className="text-[9px] px-1 py-0.5 rounded-sm bg-optic/20 text-optic uppercase">2K Nativo</span>
+                </div>
+                <p className="text-[10px] text-muted-text mt-1">Preservação por I2I/Edição e Fidelidade Óptica</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setEngine('moss-image')}
+                className={`p-2.5 rounded-sm border text-left transition-all ${
+                  engine === 'moss-image'
+                    ? 'border-optic bg-elevated text-primary-text shadow-sm'
+                    : 'border-hairline bg-surface/50 text-secondary-text hover:border-hairline hover:text-primary-text'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-indigo-400">MOSS-Image</span>
+                  <span className="text-[9px] px-1 py-0.5 rounded-sm bg-indigo-950 text-indigo-300 border border-indigo-700 uppercase">Layout JSON</span>
+                </div>
+                <p className="text-[10px] text-muted-text mt-1">Projeção 3D Bounding Box Centralizada</p>
+              </button>
+            </div>
+          </div>
+
           {/* Prompt */}
           <div className="space-y-1">
             <label className="text-[10px] font-mono font-semibold text-primary-text uppercase tracking-wider block">
@@ -140,7 +225,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
                 step="0.05"
                 value={denoise}
                 onChange={(e) => setDenoise(Number(e.target.value))}
-                className="w-full accent-[var(--accent-optic)] bg-surface h-1 rounded-sm cursor-pointer"
+                className="w-full accent-optic bg-surface h-1 rounded-sm cursor-pointer"
               />
             </div>
 
@@ -156,7 +241,7 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
                 step="1"
                 value={steps}
                 onChange={(e) => setSteps(Number(e.target.value))}
-                className="w-full accent-[var(--accent-optic)] bg-surface h-1 rounded-sm cursor-pointer"
+                className="w-full accent-optic bg-surface h-1 rounded-sm cursor-pointer"
               />
             </div>
 
@@ -165,34 +250,33 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
                 <span>{t.render.seed}</span>
                 <button
                   onClick={() => setSeed(Math.floor(Math.random() * 1000000))}
-                  className="hover:text-optic text-[9px] flex items-center space-x-0.5"
+                  className="text-optic hover:underline text-[9px] uppercase"
                 >
-                  <RefreshCw className="w-2.5 h-2.5" />
-                  <span>{t.render.newSeed}</span>
+                  {t.render.newSeed}
                 </button>
               </div>
               <input
                 type="number"
                 value={seed}
                 onChange={(e) => setSeed(Number(e.target.value))}
-                className="w-full bg-surface border border-hairline rounded-sm px-1.5 py-0.5 text-[10px] font-mono text-primary-text"
+                className="w-full bg-surface border border-hairline rounded-sm px-1.5 py-0.5 text-xs text-primary-text focus:outline-none focus:border-optic"
               />
             </div>
           </div>
 
-          {/* Progress / Output Display */}
+          {/* Progress Bar */}
           {isRendering && (
-            <div className="space-y-1.5 bg-elevated p-3 rounded-sm border border-tally/40 font-mono">
-              <div className="flex justify-between text-[10px] text-tally font-medium">
-                <span className="flex items-center space-x-1.5">
-                  <RefreshCw className="w-3 h-3 animate-spin" />
+            <div className="space-y-1.5 font-mono">
+              <div className="flex justify-between text-[10px] text-secondary-text">
+                <span className="flex items-center space-x-1">
+                  <span className="w-2 h-2 rounded-full bg-optic animate-ping" />
                   <span>{t.render.processing}</span>
                 </span>
-                <span className="tabular-nums">{renderProgress}%</span>
+                <span className="text-optic font-semibold tabular-nums">{renderProgress}%</span>
               </div>
-              <div className="w-full bg-surface h-1.5 rounded-sm overflow-hidden">
+              <div className="w-full h-1 bg-elevated rounded-full overflow-hidden border border-hairline">
                 <div
-                  className="bg-tally h-full transition-all duration-300"
+                  className="h-full bg-optic transition-all duration-300"
                   style={{ width: `${renderProgress}%` }}
                 />
               </div>
@@ -206,14 +290,23 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
                   <CheckCircle className="w-3.5 h-3.5" />
                   <span>{t.render.takeReady}</span>
                 </div>
-                <a
-                  href={generatedImageUrl}
-                  download="shotlab-render.png"
-                  className="flex items-center space-x-1 px-2.5 py-1 bg-surface text-primary-text border border-hairline rounded-sm hover:border-specular transition-colors text-[10px]"
-                >
-                  <Download className="w-3 h-3 text-optic" />
-                  <span>{t.render.download2k}</span>
-                </a>
+                <div className="flex items-center space-x-1.5">
+                  <button
+                    onClick={handleCompareInViewport}
+                    className="flex items-center space-x-1 px-2.5 py-1 bg-optic text-black font-semibold rounded-sm hover:opacity-90 active:scale-95 transition-all text-[10px]"
+                  >
+                    <Columns className="w-3 h-3" />
+                    <span>Comparar no Viewport</span>
+                  </button>
+                  <a
+                    href={generatedImageUrl}
+                    download="shotlab-take-2k.png"
+                    className="flex items-center space-x-1 px-2.5 py-1 bg-surface text-primary-text border border-hairline rounded-sm hover:border-specular transition-colors text-[10px]"
+                  >
+                    <Download className="w-3 h-3 text-optic" />
+                    <span>{t.render.download2k}</span>
+                  </a>
+                </div>
               </div>
               <div className="flex justify-center bg-black/60 rounded-sm p-1.5 border border-hairline">
                 <img

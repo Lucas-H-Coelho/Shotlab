@@ -105,6 +105,28 @@ export const ptBR = {
     lensPrefix: 'Lente',
     gateMaskPrefix: 'Gate Mask',
   },
+  comparison: {
+    title: 'Comparador de Fidelidade',
+    mode3d: '3D Blockout',
+    modeSplit: 'Cortina Split',
+    modeOnion: 'Onion Skin',
+    modeFull: 'Render 2K',
+    blockoutBadge: '3D BLOCKOUT',
+    renderBadge: 'AI RENDER (2K)',
+    opacity: 'Opacidade',
+    splitRatio: 'Divisão',
+    matchCamera: 'Sincronizar Câmera',
+    download: 'Baixar Take 2K',
+  },
+  gallery: {
+    title: 'Galeria de Takes',
+    emptyTakes: 'Nenhum take renderizado ainda. Dispare um render para comparar a fidelidade da cena.',
+    takeLabel: 'Take',
+    activeTake: 'Ativo',
+    deleteTake: 'Excluir take',
+    engineQwen: 'QWEN 2.1',
+    engineMoss: 'MOSS-IMAGE',
+  },
 };
 
 export type Translations = typeof ptBR;

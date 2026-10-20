@@ -9,6 +9,8 @@ import { SceneMesh } from './SceneMesh';
 import { CameraHelperVisualizer } from './CameraHelperVisualizer';
 import { TransformGizmo } from './TransformGizmo';
 import { ViewfinderHUD } from './ViewfinderHUD';
+import { CurtainSlider } from './CurtainSlider';
+import { ShotGalleryBar } from './ShotGalleryBar';
 import { calculateVerticalFov } from '../../types/scene';
 
 const ThreeContextBridge: React.FC<{ onContext: (ctx: { scene: any; camera: any; renderer: any }) => void }> = ({ onContext }) => {
@@ -97,8 +99,14 @@ export const Viewport: React.FC = () => {
         )}
       </Canvas>
 
+      {/* Split-View / Curtain Slider & Onion Skin Comparison Overlay */}
+      <CurtainSlider />
+
       {/* ARRI / Leica Viewfinder HUD, Safe Frames & Composition Guides */}
       <ViewfinderHUD getThreeContext={() => threeCtx} />
+
+      {/* Filmstrip Shot Gallery & Comparison Controls */}
+      <ShotGalleryBar />
     </div>
   );
 };
