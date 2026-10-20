@@ -1,5 +1,5 @@
 import math
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Dict, Any
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 ObjectType = Literal['box', 'cylinder', 'sphere', 'plane', 'table', 'backdrop', 'model']
@@ -30,6 +30,10 @@ class SceneObjectModel(BaseModel):
     material: MaterialModel = Field(default_factory=MaterialModel)
     visible: bool = Field(default=True)
     locked: bool = Field(default=False)
+    metadata: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Optional metadata for parametric objects (e.g. kelvin, pose, preset_id)"
+    )
 
     @field_validator("position")
     @classmethod
@@ -134,6 +138,7 @@ class UpdateObjectRequest(BaseModel):
     scale: Optional[List[float]] = None
     material: Optional[MaterialModel] = None
     visible: Optional[bool] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 RenderEngine = Literal["qwen-2.1", "moss-image"]
 

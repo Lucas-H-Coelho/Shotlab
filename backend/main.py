@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from db.database import init_db
-from routers import scenes, render, events, optics
+from routers import scenes, render, events, optics, catalog
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -32,6 +32,7 @@ app.include_router(scenes.router)
 app.include_router(render.router)
 app.include_router(events.router)
 app.include_router(optics.router)
+app.include_router(catalog.router)
 
 @app.get("/healthz", tags=["health"])
 async def health_check():
