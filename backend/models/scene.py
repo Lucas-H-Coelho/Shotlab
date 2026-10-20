@@ -135,13 +135,16 @@ class UpdateObjectRequest(BaseModel):
     material: Optional[MaterialModel] = None
     visible: Optional[bool] = None
 
+RenderEngine = Literal["qwen-2.1", "moss-image"]
+
 class RenderJobRequest(BaseModel):
     prompt: str
     negative_prompt: Optional[str] = "blurry, low quality, cartoon, deformed, noisy"
-    steps: int = Field(default=25, ge=10, le=50)
+    steps: int = Field(default=25, ge=1, le=100)
     denoise: float = Field(default=0.85, ge=0.1, le=1.0)
     seed: Optional[int] = None
     reference_image_base64: Optional[str] = None
+    engine: RenderEngine = Field(default="qwen-2.1", description="Dual engine selector: 'qwen-2.1' or 'moss-image'")
 
 class RenderJobResponse(BaseModel):
     job_id: str
@@ -150,4 +153,5 @@ class RenderJobResponse(BaseModel):
     progress: int = Field(default=0, ge=0, le=100)
     image_url: Optional[str] = None
     alpha_url: Optional[str] = None
+    engine: Optional[RenderEngine] = "qwen-2.1"
     error: Optional[str] = None
