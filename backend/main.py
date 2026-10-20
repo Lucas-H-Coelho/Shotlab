@@ -4,7 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import settings
 from db.database import init_db
-from routers import catalog, events, lighting, optics, render, scenes
+from routers import assets, catalog, events, lighting, optics, render, scenes
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -36,6 +37,7 @@ app.include_router(events.router)
 app.include_router(optics.router)
 app.include_router(catalog.router)
 app.include_router(lighting.router)
+app.include_router(assets.router)
 
 
 @app.get("/healthz", tags=["health"])

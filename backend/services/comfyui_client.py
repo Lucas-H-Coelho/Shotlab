@@ -359,9 +359,18 @@ def build_moss_layout_from_scene(
         color = getattr(obj.material, "color", "#94a3b8")
         roughness = float(getattr(obj.material, "roughness", 0.5))
 
+        meta = getattr(obj, "metadata", None) or {}
+        if meta.get("character_prompt"):
+            caption = meta["character_prompt"]
+        elif meta.get("is_mannequin"):
+            pose = meta.get("pose", "standing")
+            caption = f"A realistic human model in {pose} pose with studio lighting."
+        else:
+            caption = f"A realistic {obj.name} with material color {color}, roughness {roughness:.2f}, studio quality."
+
         items.append({
             "label": "object",
-            "caption": f"A realistic {obj.name} with material color {color}, roughness {roughness:.2f}, studio quality.",
+            "caption": caption,
             "bbox": [int(y_min), int(x_min), int(y_max), int(x_max)],
         })
 

@@ -2,13 +2,14 @@
 Shotlab Routers Package
 """
 
-from routers import catalog, events, lighting, optics, render, scenes
+from routers import assets, catalog, events, lighting, optics, render, scenes
 
 __all__ = [
-    "scenes",
-    "render",
-    "events",
-    "optics",
+    "assets",
     "catalog",
+    "events",
     "lighting",
+    "optics",
+    "render",
+    "scenes",
 ]

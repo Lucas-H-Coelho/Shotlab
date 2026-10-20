@@ -2,7 +2,23 @@
 Shotlab Models Package
 """
 
-from models import optics, scene
+from models import assets, optics, scene
+from models.assets import (
+    CC0_ASSETS_CATALOG,
+    MANNEQUIN_POSES,
+    AssetCategory,
+    BoundingBox,
+    CC0Asset,
+    CreateMannequinRequest,
+    MannequinPose,
+    MannequinPosePreset,
+    ProceduralFallbackGeometry,
+    SpawnAssetRequest,
+    UpdateMannequinRequest,
+    calculate_effective_height_m,
+    calculate_eye_height_m,
+    calculate_standing_eye_height_m,
+)
 from models.optics import (
     SENSOR_PRESETS,
     DepthOfFieldResult,
@@ -28,6 +44,7 @@ from models.scene import (
 )
 
 __all__ = [
+    "assets",
     "scene",
     "optics",
     "CameraModel",
@@ -49,4 +66,18 @@ __all__ = [
     "calculate_sensor_diagonal_mm",
     "calculate_vertical_fov_deg",
     "compute_full_optics",
+    "CC0_ASSETS_CATALOG",
+    "MANNEQUIN_POSES",
+    "AssetCategory",
+    "BoundingBox",
+    "CC0Asset",
+    "CreateMannequinRequest",
+    "MannequinPose",
+    "MannequinPosePreset",
+    "ProceduralFallbackGeometry",
+    "SpawnAssetRequest",
+    "UpdateMannequinRequest",
+    "calculate_effective_height_m",
+    "calculate_eye_height_m",
+    "calculate_standing_eye_height_m",
 ]
