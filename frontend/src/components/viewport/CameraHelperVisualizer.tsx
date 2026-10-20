@@ -7,9 +7,6 @@ export const CameraHelperVisualizer: React.FC = () => {
   const cameraSettings = useStudioStore((state) => state.camera);
   const activeView = useStudioStore((state) => state.activeView);
 
-  // Only show when in editor mode
-  if (activeView === 'camera') return null;
-
   const { position, target, focalLengthMm, sensorHeightMm, focusDistanceM } = cameraSettings;
   const fov = calculateVerticalFov(focalLengthMm, sensorHeightMm);
 
@@ -52,6 +49,9 @@ export const CameraHelperVisualizer: React.FC = () => {
     const geom = new THREE.BufferGeometry().setFromPoints(points);
     return geom;
   }, [camPos, tgtPos, focalLengthMm, sensorHeightMm, focusDistanceM, fov, cameraSettings.aspectRatio]);
+
+  // Only show when in editor mode
+  if (activeView === 'camera') return null;
 
   return (
     <group>

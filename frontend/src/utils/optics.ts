@@ -315,3 +315,65 @@ export function calculateFullOptics(params: FullOpticsParams): FullOpticsResult 
 // Aliases for backwards compatibility with previous imports
 export const calculateVerticalFov = calculateVerticalFovDeg;
 export const calculateHorizontalFov = calculateHorizontalFovDeg;
+
+/**
+ * Sensor Fit mode identical to Blender's `CAMERA_SENSOR_FIT_AUTO`,
+ * `CAMERA_SENSOR_FIT_HOR`, and `CAMERA_SENSOR_FIT_VERT` (source/blender/makesdna/DNA_camera_types.h).
+ */
+export type SensorFit = 'auto' | 'horizontal' | 'vertical';
+
+/**
+ * Determines effective sensor fit given explicit preference and aspect ratio,
+ * matching Blender's BKE_camera_sensor_fit logic (source/blender/blenkernel/intern/camera.cc).
+ *
+ * In Blender: if AUTO and aspect >= 1.0 (landscape/square), FIT_HOR; else FIT_VERT.
+ */
+export function determineSensorFit(
+  sensorFit: SensorFit = 'auto',
+  aspectRatio: number = 1.5
+): 'horizontal' | 'vertical' {
+  if (sensorFit === 'auto') {
+    return aspectRatio >= 1.0 ? 'horizontal' : 'vertical';
+  }
+  return sensorFit;
+}
+
+/**
+ * Calculates effective Vertical and Horizontal FOV in degrees taking into account Sensor Fit mode
+ * and frame aspect ratio, matching Blender's BKE_camera_params_compute_viewplane.
+ *
+ * For WebGL/Three.js PerspectiveCamera, camera.fov is ALWAYS vertical FOV.
+ * - When fit is 'horizontal': horizontal dimension (sensorWidth) determines hFOV,
+ *   so vertical dimension is sensorWidth / aspectRatio.
+ *   vFov = 2 * atan((sensorWidth / aspectRatio) / (2 * focalLength))
+ * - When fit is 'vertical': vertical dimension (sensorHeight) determines vFOV.
+ *   vFov = 2 * atan(sensorHeight / (2 * focalLength))
+ */
+export function calculateBlenderFovDeg(
+  focalLengthMm: number,
+  sensorWidthMm: number,
+  sensorHeightMm: number,
+  aspectRatio: number,
+  sensorFit: SensorFit = 'auto'
+): { vFov_deg: number; hFov_deg: number; effectiveFit: 'horizontal' | 'vertical' } {
+  if (focalLengthMm <= 0 || sensorWidthMm <= 0 || sensorHeightMm <= 0 || aspectRatio <= 0) {
+    throw new Error('All optical dimensions and aspect ratio must be strictly positive');
+  }
+
+  const effectiveFit = determineSensorFit(sensorFit, aspectRatio);
+
+  if (effectiveFit === 'horizontal') {
+    const hFov_deg = calculateFov_deg(focalLengthMm, sensorWidthMm);
+    // tan(vFov / 2) = tan(hFov / 2) / aspect
+    const vFovRad = 2 * Math.atan(Math.tan(((hFov_deg / 2) * Math.PI) / 180) / aspectRatio);
+    const vFov_deg = (vFovRad * 180) / Math.PI;
+    return { vFov_deg, hFov_deg, effectiveFit };
+  } else {
+    const vFov_deg = calculateFov_deg(focalLengthMm, sensorHeightMm);
+    // tan(hFov / 2) = tan(vFov / 2) * aspect
+    const hFovRad = 2 * Math.atan(Math.tan(((vFov_deg / 2) * Math.PI) / 180) * aspectRatio);
+    const hFov_deg = (hFovRad * 180) / Math.PI;
+    return { vFov_deg, hFov_deg, effectiveFit };
+  }
+}
+

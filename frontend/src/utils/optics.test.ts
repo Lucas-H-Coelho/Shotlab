@@ -6,6 +6,7 @@ import {
   calculateHyperfocal_m,
   calculateDofLimits_m,
   calculateFullOptics,
+  calculateBlenderFovDeg,
 } from './optics';
 
 describe('Real Optics Physics Engine', () => {
@@ -90,4 +91,27 @@ describe('Real Optics Physics Engine', () => {
     expect(limits.far_m).toBeCloseTo(4.177, 2);
     expect(limits.isInfinite).toBe(false);
   });
+
+  it('accurately computes Blender-compatible Sensor Fit (AUTO, HORIZONTAL, VERTICAL)', () => {
+    // 50mm lens on Full Frame 36x24mm
+    // Landscape 16:9 (aspect = 16/9 = 1.7778)
+    const landscapeAuto = calculateBlenderFovDeg(50.0, 36.0, 24.0, 16 / 9, 'auto');
+    expect(landscapeAuto.effectiveFit).toBe('horizontal');
+    expect(landscapeAuto.hFov_deg).toBeCloseTo(39.60, 2);
+    // vFov = 2 * atan(tan(hFov / 2) / (16/9)) -> 2 * atan(0.36 / 1.7778) = 22.895°
+    expect(landscapeAuto.vFov_deg).toBeCloseTo(22.90, 2);
+
+    // Portrait 9:16 (aspect = 9/16 = 0.5625)
+    const portraitAuto = calculateBlenderFovDeg(50.0, 36.0, 24.0, 9 / 16, 'auto');
+    expect(portraitAuto.effectiveFit).toBe('vertical');
+    expect(portraitAuto.vFov_deg).toBeCloseTo(26.99, 2);
+    expect(portraitAuto.hFov_deg).toBeCloseTo(15.38, 2);
+
+    // Explicit Vertical Fit on Landscape
+    const explicitVert = calculateBlenderFovDeg(50.0, 36.0, 24.0, 16 / 9, 'vertical');
+    expect(explicitVert.effectiveFit).toBe('vertical');
+    expect(explicitVert.vFov_deg).toBeCloseTo(26.99, 2);
+    expect(explicitVert.hFov_deg).toBeCloseTo(46.21, 2);
+  });
 });
+
