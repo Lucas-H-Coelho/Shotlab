@@ -1,12 +1,15 @@
 .PHONY: all test test-backend test-frontend build build-frontend lint lint-backend lint-frontend help
 
-# Detect Python interpreter (local .venv, workspace .venv, or system python3)
-PYTHON ?= $(shell \
-	if [ -f backend/.venv/bin/python ]; then echo "backend/.venv/bin/python"; \
-	elif [ -f ../backend/.venv/bin/python ]; then echo "../backend/.venv/bin/python"; \
-	elif [ -f /home/rukashi/Documentos/GitHub/Shotlab/backend/.venv/bin/python ]; then echo "/home/rukashi/Documentos/GitHub/Shotlab/backend/.venv/bin/python"; \
-	elif command -v python3 >/dev/null 2>&1; then echo "python3"; \
-	else echo "python"; fi)
+# Detect Python interpreter using absolute path (local .venv, parent worktree .venv, global repo .venv, or system python3)
+ifneq ($(wildcard $(CURDIR)/backend/.venv/bin/python),)
+    PYTHON ?= $(CURDIR)/backend/.venv/bin/python
+else ifneq ($(wildcard $(abspath $(CURDIR)/../backend/.venv/bin/python)),)
+    PYTHON ?= $(abspath $(CURDIR)/../backend/.venv/bin/python)
+else ifneq ($(wildcard /home/rukashi/Documentos/GitHub/Shotlab/backend/.venv/bin/python),)
+    PYTHON ?= /home/rukashi/Documentos/GitHub/Shotlab/backend/.venv/bin/python
+else
+    PYTHON ?= $(shell command -v python3 2>/dev/null || echo python)
+endif
 
 all: lint test build
 
