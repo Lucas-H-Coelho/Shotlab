@@ -49,7 +49,7 @@ def default_scene(scene_id: str, name: str = "Nova Sessão Fotográfica") -> Sce
                 position=[0.0, 1.05, 0.0],
                 rotation=[0.0, 0.35, 0.0],
                 scale=[0.25, 0.5, 0.25],
-                material={"color": "#e11d48", "roughness": 0.2, "metalness": 0.8},
+                material={"color": "#d4d7dd", "roughness": 0.25, "metalness": 0.65},
             ),
         ],
     )

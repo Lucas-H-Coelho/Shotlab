@@ -144,9 +144,9 @@ const initialObjects: SceneObject[] = [
     rotation: [0, 0.35, 0],
     scale: [0.25, 0.5, 0.25],
     material: {
-      color: '#e11d48',
-      roughness: 0.2,
-      metalness: 0.8,
+      color: '#d4d7dd',
+      roughness: 0.25,
+      metalness: 0.65,
     },
     visible: true,
   },
@@ -307,25 +307,25 @@ export const useStudioStore = create<StudioState>((set, get) => ({
         name = `Cubo ${state.objects.length + 1}`;
         position = [xOffset, 0.25, 0];
         scale = [0.5, 0.5, 0.5];
-        color = '#38bdf8';
+        color = '#969ba4';
         break;
       case 'cylinder':
         name = `Cilindro ${state.objects.length + 1}`;
         position = [xOffset, 0.4, 0];
         scale = [0.6, 0.8, 0.6];
-        color = '#a855f7';
+        color = '#6b707b';
         break;
       case 'sphere':
         name = `Esfera ${state.objects.length + 1}`;
         position = [xOffset, 0.3, 0];
         scale = [0.6, 0.6, 0.6];
-        color = '#f59e0b';
+        color = '#d4d7dd';
         break;
       case 'table':
         name = `Mesa / Bancada ${state.objects.length + 1}`;
         position = [xOffset + 0.4, 0.45, 0];
         scale = [1.2, 0.9, 0.8];
-        color = '#78716c';
+        color = '#383e4a';
         break;
       default:
         name = `Item ${state.objects.length + 1}`;

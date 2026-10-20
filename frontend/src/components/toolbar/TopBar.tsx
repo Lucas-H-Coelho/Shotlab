@@ -207,9 +207,9 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenRenderModal }) => {
           <div
             className={`w-1.5 h-1.5 rounded-full ${
               wsStatus === 'connected'
-                ? 'bg-status-ok animate-pulse'
+                ? 'bg-optic'
                 : wsStatus === 'connecting'
-                ? 'bg-warning animate-pulse'
+                ? 'bg-optic/60 animate-pulse'
                 : 'bg-muted-text'
             }`}
           />
@@ -221,21 +221,25 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenRenderModal }) => {
 
         {/* ComfyUI Server Telemetry Badge */}
         <div className="flex items-center space-x-2 text-xs bg-surface px-2 py-1 rounded-sm border border-hairline">
-          <div className="w-1.5 h-1.5 rounded-full bg-status-ok animate-pulse" />
+          <div className="w-1.5 h-1.5 rounded-full bg-optic/80" />
           <Server className="w-3 h-3 text-secondary-text" />
           <span className="font-mono text-[10px] text-secondary-text truncate max-w-[120px] tabular-nums">
             {comfyUrl.replace('http://', '')}
           </span>
         </div>
 
-        {/* Render Action Button (Tally Style) */}
+        {/* Render Action Button (Leica Gold idle, Tally Red when actively rendering per DESIGN.md) */}
         <button
           onClick={onOpenRenderModal}
           disabled={isRendering}
-          className="flex items-center space-x-1.5 px-3 py-1 rounded-sm text-xs font-semibold tracking-wide text-white bg-tally hover:opacity-90 active:scale-95 transition-all shadow-sm disabled:opacity-50 border border-tally"
+          className={`flex items-center space-x-1.5 px-3 py-1 rounded-sm text-xs font-semibold tracking-wide transition-all shadow-sm active:scale-95 disabled:opacity-70 border ${
+            isRendering
+              ? 'bg-tally text-white border-tally animate-pulse'
+              : 'bg-optic text-void border-optic hover:brightness-110'
+          }`}
         >
           <Sparkles className="w-3.5 h-3.5" />
-          <span className="uppercase text-[11px] font-mono tabular-nums">
+          <span className="uppercase text-[11px] font-mono tabular-nums font-bold">
             {isRendering ? t.topbar.capturing : t.topbar.captureTake}
           </span>
         </button>

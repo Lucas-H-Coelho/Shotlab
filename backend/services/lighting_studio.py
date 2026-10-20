@@ -668,82 +668,74 @@ def generate_set_plan_svg(scene: SceneGraphModel) -> str:
 
     ratio_val = (lights.key_light.intensity / lights.fill_light.intensity) if lights.fill_light.intensity > 0 else 1.0
 
-    # Build SVG pieces
+    # Build SVG pieces (Strict Vantablack & Machined Metal CAD Blueprint)
     svg: List[str] = [
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {svg_w} {svg_h}" width="100%" height="100%">',
         "  <defs>",
-        "    <!-- Background studio subtle vignette -->",
+        "    <!-- Vantablack studio subtle vignette -->",
         '    <radialGradient id="studio-vignette" cx="50%" cy="52%" r="65%">',
-        '      <stop offset="0%" stop-color="#12161f" stop-opacity="0.8"/>',
-        '      <stop offset="60%" stop-color="#0b0c0e" stop-opacity="0.95"/>',
-        '      <stop offset="100%" stop-color="#050607" stop-opacity="1.0"/>',
+        '      <stop offset="0%" stop-color="#0e1014" stop-opacity="0.85"/>',
+        '      <stop offset="65%" stop-color="#08090b" stop-opacity="0.95"/>',
+        '      <stop offset="100%" stop-color="#050506" stop-opacity="1.0"/>',
         "    </radialGradient>",
         "",
-        "    <!-- Camera FOV cone amber gradient -->",
+        "    <!-- Camera FOV cone Cine Amber gradient -->",
         '    <radialGradient id="fov-glow" cx="0%" cy="0%" r="100%">',
-        '      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.18"/>',
-        '      <stop offset="65%" stop-color="#f59e0b" stop-opacity="0.04"/>',
-        '      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0"/>',
+        '      <stop offset="0%" stop-color="#ebb32d" stop-opacity="0.14"/>',
+        '      <stop offset="65%" stop-color="#ebb32d" stop-opacity="0.03"/>',
+        '      <stop offset="100%" stop-color="#ebb32d" stop-opacity="0.0"/>',
         "    </radialGradient>",
         "",
-        "    <!-- Key light beam gradient -->",
+        "    <!-- Key light beam gradient (Cine Amber) -->",
         '    <linearGradient id="key-beam" x1="0%" y1="0%" x2="100%" y2="100%">',
-        '      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.32"/>',
-        '      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.01"/>',
+        '      <stop offset="0%" stop-color="#ebb32d" stop-opacity="0.16"/>',
+        '      <stop offset="100%" stop-color="#ebb32d" stop-opacity="0.0"/>',
         "    </linearGradient>",
         "",
-        "    <!-- Fill light beam gradient -->",
+        "    <!-- Fill light beam gradient (Brushed Silver) -->",
         '    <linearGradient id="fill-beam" x1="0%" y1="0%" x2="100%" y2="100%">',
-        '      <stop offset="0%" stop-color="#93c5fd" stop-opacity="0.25"/>',
-        '      <stop offset="100%" stop-color="#93c5fd" stop-opacity="0.01"/>',
+        '      <stop offset="0%" stop-color="#eaecef" stop-opacity="0.12"/>',
+        '      <stop offset="100%" stop-color="#eaecef" stop-opacity="0.0"/>',
         "    </linearGradient>",
         "",
-        "    <!-- Rim light beam gradient -->",
+        "    <!-- Rim light beam gradient (Pewter) -->",
         '    <linearGradient id="rim-beam" x1="0%" y1="0%" x2="100%" y2="100%">',
-        '      <stop offset="0%" stop-color="#c084fc" stop-opacity="0.28"/>',
-        '      <stop offset="100%" stop-color="#c084fc" stop-opacity="0.01"/>',
+        '      <stop offset="0%" stop-color="#969ba4" stop-opacity="0.12"/>',
+        '      <stop offset="100%" stop-color="#969ba4" stop-opacity="0.0"/>',
         "    </linearGradient>",
-        "",
-        "    <!-- Dimension Tick Marker -->",
-        '    <marker id="tick-start" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">',
-        '      <circle cx="3" cy="3" r="2" fill="#64748b"/>',
-        "    </marker>",
-        '    <marker id="tick-end" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">',
-        '      <circle cx="3" cy="3" r="2" fill="#64748b"/>',
-        "    </marker>",
         "  </defs>",
         "",
-        "  <!-- Studio Floor & Blueprint Background -->",
-        f'  <rect width="{svg_w}" height="{svg_h}" fill="#0b0c0e"/>',
+        "  <!-- Studio Floor & Vantablack Blueprint Background -->",
+        f'  <rect width="{svg_w}" height="{svg_h}" fill="#050506"/>',
         f'  <rect width="{svg_w}" height="{svg_h}" fill="url(#studio-vignette)"/>',
         "",
         "  <!-- Metric Studio Grid (1.0m × 1.0m) -->",
-        '  <g id="metric-grid" opacity="0.6">',
+        '  <g id="metric-grid" opacity="0.75">',
     ]
 
     # Draw grid lines from -5m to +5m on X, -4m to +4m on Z
     for mx in range(-5, 6):
         gx, _ = m_to_px(float(mx), 0.0)
         is_axis = (mx == 0)
-        stroke_col = "#2a3241" if is_axis else "#161b24"
-        stroke_w = "1.5" if is_axis else "1.0"
-        svg.append(f'    <line x1="{gx:.1f}" y1="110" x2="{gx:.1f}" y2="920" stroke="{stroke_col}" stroke-width="{stroke_w}"/>')
+        stroke_col = "#242830" if is_axis else "#13161b"
+        stroke_w = "1.4" if is_axis else "1.0"
+        svg.append(f'    <line x1="{gx:.1f}" y1="110" x2="{gx:.1f}" y2="915" stroke="{stroke_col}" stroke-width="{stroke_w}"/>')
         if not is_axis and -4 <= mx <= 4:
-            svg.append(f'    <text x="{gx:.1f}" y="934" font-family="monospace" font-size="9" fill="#475569" text-anchor="middle">{mx:+}m</text>')
+            svg.append(f'    <text x="{gx:.1f}" y="910" font-family="monospace" font-size="9" fill="#5c616b" text-anchor="middle">{mx:+}m</text>')
 
     for mz in range(-4, 5):
         _, gz = m_to_px(0.0, float(mz))
         is_axis = (mz == 0)
-        stroke_col = "#2a3241" if is_axis else "#161b24"
-        stroke_w = "1.5" if is_axis else "1.0"
+        stroke_col = "#242830" if is_axis else "#13161b"
+        stroke_w = "1.4" if is_axis else "1.0"
         svg.append(f'    <line x1="60" y1="{gz:.1f}" x2="940" y2="{gz:.1f}" stroke="{stroke_col}" stroke-width="{stroke_w}"/>')
         if not is_axis:
-            svg.append(f'    <text x="50" y="{gz + 3:.1f}" font-family="monospace" font-size="9" fill="#475569" text-anchor="end">{mz:+}m</text>')
+            svg.append(f'    <text x="50" y="{gz + 3:.1f}" font-family="monospace" font-size="9" fill="#5c616b" text-anchor="end">{mz:+}m</text>')
 
     svg.append("  </g>")
     svg.append("")
 
-    # Scene Objects (Backdrops, Tables, Props)
+    # Scene Objects (Backdrops, Tables, Props) — clean CAD outlines without center label collisions
     svg.append('  <!-- Scene Objects & Backdrops -->')
     for obj in scene.objects:
         ox, oz = m_to_px(obj.position[0], obj.position[2])
@@ -754,40 +746,40 @@ def generate_set_plan_svg(scene: SceneGraphModel) -> str:
         if obj.type == "backdrop":
             # Seamless Cyclorama / Curved Studio Backdrop
             svg.append(f'  <g id="obj-{obj.id}" transform="translate({ox:.1f}, {oz:.1f}) rotate({rot_deg:.1f})">')
-            svg.append(f'    <rect x="{-w_px / 2.0:.1f}" y="{-d_px / 2.0:.1f}" width="{w_px:.1f}" height="{d_px:.1f}" rx="12" fill="#151b23" stroke="#374151" stroke-width="2"/>')
-            svg.append(f'    <path d="M {-w_px/2.0 + 8:.1f} {-d_px/2.0 + 10:.1f} L {w_px/2.0 - 8:.1f} {-d_px/2.0 + 10:.1f}" stroke="#475569" stroke-width="3" stroke-dasharray="4,4"/>')
-            svg.append(f'    <text x="0" y="5" font-family="monospace" font-size="11" fill="#94a3b8" text-anchor="middle" font-weight="600">{obj.name.upper()}</text>')
-            svg.append(f'    <text x="0" y="20" font-family="monospace" font-size="9" fill="#64748b" text-anchor="middle">{obj.scale[0]:.1f}m × {obj.scale[1]:.1f}m | Y: {obj.position[1]:.2f}m</text>')
+            svg.append(f'    <rect x="{-w_px / 2.0:.1f}" y="{-d_px / 2.0:.1f}" width="{w_px:.1f}" height="{d_px:.1f}" rx="6" fill="#0b0d10" stroke="#242830" stroke-width="1.5"/>')
+            svg.append(f'    <path d="M {-w_px/2.0 + 10:.1f} {-d_px/2.0 + 10:.1f} L {w_px/2.0 - 10:.1f} {-d_px/2.0 + 10:.1f}" stroke="#383e4a" stroke-width="2" stroke-dasharray="4,4"/>')
+            # Place backdrop label cleanly in bottom-right corner of the cyc so it never collides with Rim Light
+            svg.append(f'    <text x="{w_px/2.0 - 12:.1f}" y="{d_px/2.0 - 10:.1f}" font-family="monospace" font-size="9" fill="#5c616b" text-anchor="end">{obj.name.upper()} ({obj.scale[0]:.1f}m × {obj.scale[1]:.1f}m)</text>')
             svg.append('  </g>')
-        elif obj.name != subj_name:
-            # Table or prop
+        else:
+            # Prop / Pedestal outline; only draw text label if far from primary subject reticle (> 55px)
+            dist_to_subj_px = math.hypot(ox - subj_px, oz - subj_pz)
             svg.append(f'  <g id="obj-{obj.id}" transform="translate({ox:.1f}, {oz:.1f}) rotate({rot_deg:.1f})">')
-            svg.append(f'    <rect x="{-w_px / 2.0:.1f}" y="{-d_px / 2.0:.1f}" width="{w_px:.1f}" height="{d_px:.1f}" rx="4" fill="#1a2230" stroke="#334155" stroke-width="1.5"/>')
-            svg.append(f'    <text x="0" y="3" font-family="monospace" font-size="10" fill="#cbd5e1" text-anchor="middle">{obj.name}</text>')
-            svg.append(f'    <text x="0" y="16" font-family="monospace" font-size="8" fill="#64748b" text-anchor="middle">Y: {obj.position[1]:.2f}m</text>')
+            svg.append(f'    <rect x="{-w_px / 2.0:.1f}" y="{-d_px / 2.0:.1f}" width="{w_px:.1f}" height="{d_px:.1f}" rx="3" fill="#101216" stroke="#2e333d" stroke-width="1.2"/>')
+            if dist_to_subj_px > 55.0:
+                svg.append(f'    <text x="0" y="{-d_px / 2.0 - 6:.1f}" font-family="monospace" font-size="8.5" fill="#969ba4" text-anchor="middle">{obj.name}</text>')
             svg.append('  </g>')
 
     svg.append("")
 
     # Camera FOV Cone & Sightlines
     svg.append('  <!-- Physical Camera Field of View (FOV) Cone -->')
-    svg.append(f'  <polygon points="{cam_px:.1f},{cam_pz:.1f} {fov_left_x:.1f},{fov_left_z:.1f} {fov_right_x:.1f},{fov_right_z:.1f}" fill="url(#fov-glow)" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.9"/>')
-    svg.append(f'  <line x1="{cam_px:.1f}" y1="{cam_pz:.1f}" x2="{subj_px:.1f}" y2="{subj_pz:.1f}" stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.8"/>')
+    svg.append(f'  <polygon points="{cam_px:.1f},{cam_pz:.1f} {fov_left_x:.1f},{fov_left_z:.1f} {fov_right_x:.1f},{fov_right_z:.1f}" fill="url(#fov-glow)" stroke="#ebb32d" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.85"/>')
+    svg.append(f'  <line x1="{cam_px:.1f}" y1="{cam_pz:.1f}" x2="{subj_px:.1f}" y2="{subj_pz:.1f}" stroke="#ebb32d" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.75"/>')
     svg.append("")
 
-    # Spatial Cotas (Dimension Lines between Camera / Lights and Subject)
+    # Spatial Cotas (Dimension Line between Camera and Subject)
     svg.append('  <!-- Spatial Cotas / Distance Measurements -->')
-    # Camera to Subject Distance
     c_mid_x = (cam_px + subj_px) / 2.0
     c_mid_z = (cam_pz + subj_pz) / 2.0
     cam_dist_3d = math.sqrt((cam.position[0] - subj_pos[0]) ** 2 + (cam.position[1] - subj_pos[1]) ** 2 + (cam.position[2] - subj_pos[2]) ** 2)
 
     svg.append('  <g id="cota-cam">')
-    svg.append(f'    <rect x="{c_mid_x - 48:.1f}" y="{c_mid_z - 11:.1f}" width="96" height="22" rx="4" fill="#0f141c" stroke="#f59e0b" stroke-width="1"/>')
-    svg.append(f'    <text x="{c_mid_x:.1f}" y="{c_mid_z + 4:.1f}" font-family="monospace" font-size="11" fill="#f59e0b" text-anchor="middle" font-weight="bold">{cam_dist_3d:.2f}m</text>')
+    svg.append(f'    <rect x="{c_mid_x - 36:.1f}" y="{c_mid_z - 10:.1f}" width="72" height="20" rx="2" fill="#08090b" stroke="#ebb32d" stroke-width="1"/>')
+    svg.append(f'    <text x="{c_mid_x:.1f}" y="{c_mid_z + 3.5:.1f}" font-family="monospace" font-size="10" fill="#ebb32d" text-anchor="middle" font-weight="bold">{cam_dist_3d:.2f}m</text>')
     svg.append('  </g>')
 
-    # Studio Lights & Modifiers
+    # Studio Lights & Modifiers (Monochromatic Machined Metal + Cine Amber Key)
     def draw_light_modifier(
         light_model: LightSourceModel,
         role: str,
@@ -801,7 +793,6 @@ def generate_set_plan_svg(scene: SceneGraphModel) -> str:
         mod_id = getattr(light_model, "modifier", None) or default_mod
         modifier = LIGHT_MODIFIERS.get(mod_id, LIGHT_MODIFIERS[default_mod])
 
-        # Direction vector from light to subject
         dir_x = subj_px - lx
         dir_z = subj_pz - lz
         dist_px = math.sqrt(dir_x * dir_x + dir_z * dir_z)
@@ -809,71 +800,62 @@ def generate_set_plan_svg(scene: SceneGraphModel) -> str:
         aim_angle_deg = math.degrees(aim_angle_rad)
 
         beam_rad = math.radians(modifier.beam_angle_deg / 2.0)
-        beam_dist_px = min(dist_px + 40.0, 3.5 * scale_px_per_m)
+        beam_dist_px = min(dist_px + 25.0, 3.2 * scale_px_per_m)
         b_left_x = lx + math.cos(aim_angle_rad - beam_rad) * beam_dist_px
         b_left_z = lz + math.sin(aim_angle_rad - beam_rad) * beam_dist_px
         b_right_x = lx + math.cos(aim_angle_rad + beam_rad) * beam_dist_px
         b_right_z = lz + math.sin(aim_angle_rad + beam_rad) * beam_dist_px
 
         grad_id = f"{role}-beam"
-        color_accent = "#fbbf24" if role == "key" else ("#93c5fd" if role == "fill" else "#c084fc")
+        # Key Light uses Cine Amber (#ebb32d), Fill & Rim use Brushed Silver/Pewter (#eaecef / #969ba4)
+        color_accent = "#ebb32d" if role == "key" else ("#eaecef" if role == "fill" else "#969ba4")
 
-        # Beam cone
         svg.append(f'  <!-- {role_label} Beam & Modifier -->')
-        svg.append(f'  <polygon points="{lx:.1f},{lz:.1f} {b_left_x:.1f},{b_left_z:.1f} {b_right_x:.1f},{b_right_z:.1f}" fill="url(#{grad_id})" opacity="0.8"/>')
-        # Line to subject
-        svg.append(f'  <line x1="{lx:.1f}" y1="{lz:.1f}" x2="{subj_px:.1f}" y2="{subj_pz:.1f}" stroke="{color_accent}" stroke-width="1.0" stroke-dasharray="2,3" opacity="0.5"/>')
+        svg.append(f'  <polygon points="{lx:.1f},{lz:.1f} {b_left_x:.1f},{b_left_z:.1f} {b_right_x:.1f},{b_right_z:.1f}" fill="url(#{grad_id})" opacity="0.85"/>')
+        svg.append(f'  <line x1="{lx:.1f}" y1="{lz:.1f}" x2="{subj_px:.1f}" y2="{subj_pz:.1f}" stroke="{color_accent}" stroke-width="1.0" stroke-dasharray="3,3" opacity="0.45"/>')
 
-        # Modifier Top-Down shape
         svg.append(f'  <g transform="translate({lx:.1f}, {lz:.1f}) rotate({aim_angle_deg:.1f})">')
         if modifier.type == "octabox":
-            # Octagon shape
-            svg.append(f'    <polygon points="0,-18 12,-12 18,0 12,12 0,18 -12,12 -18,0 -12,-12" fill="#18202c" stroke="{color_accent}" stroke-width="2"/>')
-            svg.append(f'    <circle cx="0" cy="0" r="4" fill="{color_accent}"/>')
+            svg.append(f'    <polygon points="0,-16 11,-11 16,0 11,11 0,16 -11,11 -16,0 -11,-11" fill="#171a20" stroke="{color_accent}" stroke-width="1.6"/>')
+            svg.append(f'    <circle cx="0" cy="0" r="3.5" fill="{color_accent}"/>')
         elif modifier.type == "stripbox":
-            # Narrow elongated strip
-            svg.append(f'    <rect x="-6" y="-22" width="12" height="44" rx="2" fill="#18202c" stroke="{color_accent}" stroke-width="2"/>')
-            svg.append(f'    <line x1="0" y1="-18" x2="0" y2="18" stroke="{color_accent}" stroke-width="1.5"/>')
+            svg.append(f'    <rect x="-5" y="-20" width="10" height="40" rx="2" fill="#171a20" stroke="{color_accent}" stroke-width="1.6"/>')
+            svg.append(f'    <line x1="0" y1="-16" x2="0" y2="16" stroke="{color_accent}" stroke-width="1.2"/>')
         elif modifier.type == "beauty_dish":
-            # Circular dish with center deflector
-            svg.append(f'    <circle cx="0" cy="0" r="16" fill="#18202c" stroke="{color_accent}" stroke-width="2"/>')
-            svg.append(f'    <circle cx="0" cy="0" r="6" fill="#374151" stroke="{color_accent}" stroke-width="1.2"/>')
+            svg.append(f'    <circle cx="0" cy="0" r="15" fill="#171a20" stroke="{color_accent}" stroke-width="1.6"/>')
+            svg.append(f'    <circle cx="0" cy="0" r="5" fill="#21252d" stroke="{color_accent}" stroke-width="1.2"/>')
         elif modifier.type == "fresnel":
-            # Lens spot
-            svg.append(f'    <rect x="-8" y="-12" width="16" height="24" rx="3" fill="#18202c" stroke="{color_accent}" stroke-width="2"/>')
-            svg.append(f'    <circle cx="4" cy="0" r="8" fill="none" stroke="{color_accent}" stroke-width="1.5"/>')
+            svg.append(f'    <rect x="-8" y="-11" width="16" height="22" rx="2" fill="#171a20" stroke="{color_accent}" stroke-width="1.6"/>')
+            svg.append(f'    <circle cx="4" cy="0" r="7" fill="none" stroke="{color_accent}" stroke-width="1.2"/>')
         else:
-            # Default rectangular Softbox
-            svg.append(f'    <rect x="-8" y="-16" width="16" height="32" rx="3" fill="#18202c" stroke="{color_accent}" stroke-width="2"/>')
-            svg.append(f'    <line x1="6" y1="-14" x2="6" y2="14" stroke="{color_accent}" stroke-width="2"/>')
-
+            svg.append(f'    <rect x="-7" y="-15" width="14" height="30" rx="2" fill="#171a20" stroke="{color_accent}" stroke-width="1.6"/>')
+            svg.append(f'    <line x1="5" y1="-13" x2="5" y2="13" stroke="{color_accent}" stroke-width="1.6"/>')
         svg.append('  </g>')
 
-        # Labels & Telemetry badge for light
-        badge_offset_y = 28 if lz < subj_pz else -28
+        # Place badge outward from center (above for Rim Light at top, below for Front lights)
+        badge_offset_y = -34 if lz < subj_pz else 34
         svg.append(f'  <g transform="translate({lx:.1f}, {lz + badge_offset_y:.1f})">')
-        svg.append(f'    <rect x="-70" y="-14" width="140" height="28" rx="4" fill="#0f141c" stroke="{color_accent}" stroke-width="1" opacity="0.95"/>')
-        svg.append(f'    <text x="0" y="-2" font-family="monospace" font-size="10" fill="{color_accent}" text-anchor="middle" font-weight="bold">{role_label.upper()}</text>')
+        svg.append('    <rect x="-72" y="-14" width="144" height="28" rx="2" fill="#08090b" stroke="#242830" stroke-width="1"/>')
+        svg.append(f'    <text x="0" y="-2" font-family="monospace" font-size="9.5" fill="{color_accent}" text-anchor="middle" font-weight="bold">{role_label.upper()}</text>')
         kelvin_val = getattr(light_model, "kelvin", None) or 5600
-        svg.append(f'    <text x="0" y="10" font-family="monospace" font-size="8.5" fill="#94a3b8" text-anchor="middle">{dist_3d:.2f}m | H:{light_model.position[1]:.2f}m | {azimuth:+.0f}° | {kelvin_val}K</text>')
+        svg.append(f'    <text x="0" y="9.5" font-family="monospace" font-size="8" fill="#969ba4" text-anchor="middle">{dist_3d:.2f}m | H:{light_model.position[1]:.2f}m | {azimuth:+.0f}° | {kelvin_val}K</text>')
         svg.append('  </g>')
 
-    # Draw Key, Fill, Rim lights
     draw_light_modifier(lights.key_light, "key", "Key Light", key_d3, key_az, key_el, "softbox_60x90")
     draw_light_modifier(lights.fill_light, "fill", "Fill Light", fill_d3, fill_az, fill_el, "octabox_120")
     draw_light_modifier(lights.rim_light, "rim", "Rim Light", rim_d3, rim_az, rim_el, "stripbox_30x140")
 
     svg.append("")
 
-    # Subject Point / Target
+    # Subject Point / Target (Machined Silver & Cine Amber Crosshair)
     svg.append('  <!-- Subject / Model Target -->')
     svg.append(f'  <g id="scene-subject" transform="translate({subj_px:.1f}, {subj_pz:.1f})">')
-    svg.append('    <circle cx="0" cy="0" r="16" fill="#064e3b" stroke="#10b981" stroke-width="2" opacity="0.9"/>')
-    svg.append('    <circle cx="0" cy="0" r="6" fill="#10b981"/>')
-    svg.append('    <line x1="-20" y1="0" x2="20" y2="0" stroke="#10b981" stroke-width="1" stroke-dasharray="2,2"/>')
-    svg.append('    <line x1="0" y1="-20" x2="0" y2="20" stroke="#10b981" stroke-width="1" stroke-dasharray="2,2"/>')
-    svg.append('    <rect x="-65" y="22" width="130" height="20" rx="3" fill="#0b0f15" stroke="#10b981" stroke-width="1"/>')
-    svg.append(f'    <text x="0" y="35" font-family="monospace" font-size="9" fill="#10b981" text-anchor="middle" font-weight="bold">{subj_name.upper()} (H: {subj_pos[1]:.2f}m)</text>')
+    svg.append('    <circle cx="0" cy="0" r="14" fill="#08090b" stroke="#eaecef" stroke-width="1.5" opacity="0.95"/>')
+    svg.append('    <circle cx="0" cy="0" r="4.5" fill="#ebb32d"/>')
+    svg.append('    <line x1="-22" y1="0" x2="22" y2="0" stroke="#eaecef" stroke-width="1" stroke-dasharray="2,2"/>')
+    svg.append('    <line x1="0" y1="-22" x2="0" y2="22" stroke="#eaecef" stroke-width="1" stroke-dasharray="2,2"/>')
+    svg.append('    <rect x="20" y="-11" width="148" height="22" rx="2" fill="#08090b" stroke="#383e4a" stroke-width="1"/>')
+    svg.append(f'    <text x="94" y="3" font-family="monospace" font-size="8.5" fill="#eaecef" text-anchor="middle" font-weight="bold">{subj_name.upper()} (H:{subj_pos[1]:.2f}m)</text>')
     svg.append('  </g>')
     svg.append("")
 
@@ -881,43 +863,40 @@ def generate_set_plan_svg(scene: SceneGraphModel) -> str:
     cam_rot_deg = math.degrees(optical_angle_rad) + 90.0
     svg.append('  <!-- Physical Camera Top-Down Glyph -->')
     svg.append(f'  <g id="camera-glyph" transform="translate({cam_px:.1f}, {cam_pz:.1f}) rotate({cam_rot_deg:.1f})">')
-    # Camera body
-    svg.append('    <rect x="-18" y="-12" width="36" height="24" rx="4" fill="#1c2432" stroke="#f59e0b" stroke-width="2"/>')
-    # Lens mount & barrel pointing forward (-Y in rotated space)
-    svg.append('    <path d="M -8 -12 L -6 -24 L 6 -24 L 8 -12 Z" fill="#2d3748" stroke="#f59e0b" stroke-width="1.5"/>')
-    svg.append('    <circle cx="0" cy="-24" r="5" fill="#f59e0b"/>')
+    svg.append('    <rect x="-16" y="-11" width="32" height="22" rx="2" fill="#171a20" stroke="#ebb32d" stroke-width="1.8"/>')
+    svg.append('    <path d="M -7 -11 L -5 -22 L 5 -22 L 7 -11 Z" fill="#21252d" stroke="#ebb32d" stroke-width="1.4"/>')
+    svg.append('    <circle cx="0" cy="-22" r="4" fill="#ebb32d"/>')
     svg.append('  </g>')
-    # Camera Label Badge
-    svg.append(f'  <g transform="translate({cam_px:.1f}, {cam_pz + 30:.1f})">')
-    svg.append('    <rect x="-90" y="-15" width="180" height="30" rx="4" fill="#0b0f15" stroke="#f59e0b" stroke-width="1.5"/>')
-    svg.append(f'    <text x="0" y="-2" font-family="monospace" font-size="10.5" fill="#f59e0b" text-anchor="middle" font-weight="bold">CAMERA // {cam.focal_length_mm:.0f}mm f/{cam.f_stop:.1f}</text>')
-    svg.append(f'    <text x="0" y="10" font-family="monospace" font-size="8.5" fill="#94a3b8" text-anchor="middle">H: {cam.position[1]:.2f}m | FOV H: {hfov_deg:.1f}°</text>')
+    svg.append(f'  <g transform="translate({cam_px:.1f}, {cam_pz + 32:.1f})">')
+    svg.append('    <rect x="-88" y="-14" width="176" height="28" rx="2" fill="#08090b" stroke="#ebb32d" stroke-width="1.2"/>')
+    svg.append(f'    <text x="0" y="-2" font-family="monospace" font-size="10" fill="#ebb32d" text-anchor="middle" font-weight="bold">CAMERA // {cam.focal_length_mm:.0f}mm f/{cam.f_stop:.1f}</text>')
+    svg.append(f'    <text x="0" y="9.5" font-family="monospace" font-size="8" fill="#969ba4" text-anchor="middle">H: {cam.position[1]:.2f}m | FOV H: {hfov_deg:.1f}°</text>')
     svg.append('  </g>')
     svg.append("")
 
     # Blueprint Header Bar (Vantablack & Machined Metal)
     svg.append('  <!-- Blueprint Top Header Bar -->')
-    svg.append('  <rect x="20" y="20" width="960" height="74" rx="6" fill="#111620" stroke="#222b3a" stroke-width="1.5"/>')
-    svg.append('  <text x="40" y="48" font-family="monospace" font-size="16" fill="#f8fafc" font-weight="bold" letter-spacing="1">SHOTLAB // SET PLAN 2D BLUEPRINT</text>')
-    svg.append(f'  <text x="40" y="72" font-family="monospace" font-size="11" fill="#94a3b8">CENA: {scene.name.upper()} | ESCALA: 1.0m = {scale_px_per_m:.0f}px | GRID: 1.0m × 1.0m</text>')
-    svg.append('  <text x="940" y="48" font-family="monospace" font-size="12" fill="#f59e0b" text-anchor="end" font-weight="bold">TOP-DOWN 2D PHOTOMETRY</text>')
-    svg.append(f'  <text x="940" y="72" font-family="monospace" font-size="10" fill="#64748b" text-anchor="end">RATIO {ratio_val:.1f}:1 (KEY/FILL) | OPTIC ACCENT #f59e0b</text>')
+    svg.append('  <rect x="20" y="20" width="960" height="72" rx="3" fill="#0e1014" stroke="#1e2229" stroke-width="1.2"/>')
+    svg.append('  <text x="40" y="48" font-family="monospace" font-size="15" fill="#eaecef" font-weight="bold" letter-spacing="1">SHOTLAB // SET PLAN 2D BLUEPRINT</text>')
+    svg.append(f'  <text x="40" y="70" font-family="monospace" font-size="10.5" fill="#969ba4">CENA: {scene.name.upper()} | ESCALA: 1.0m = {scale_px_per_m:.0f}px | GRID: 1.0m × 1.0m</text>')
+    svg.append('  <text x="940" y="48" font-family="monospace" font-size="11.5" fill="#ebb32d" text-anchor="end" font-weight="bold">TOP-DOWN 2D PHOTOMETRY</text>')
+    svg.append(f'  <text x="940" y="70" font-family="monospace" font-size="9.5" fill="#5c616b" text-anchor="end">RATIO {ratio_val:.1f}:1 (KEY/FILL) | LEICA GOLD #EBB32D</text>')
     svg.append("")
 
     # Blueprint Bottom Telemetry Footer Bar
     svg.append('  <!-- Blueprint Bottom Telemetry Footer Cards -->')
-    svg.append('  <rect x="20" y="930" width="960" height="52" rx="6" fill="#111620" stroke="#222b3a" stroke-width="1.5"/>')
-    svg.append('  <text x="40" y="952" font-family="monospace" font-size="10.5" fill="#f59e0b" font-weight="bold">ÓPTICA:</text>')
-    svg.append(f'  <text x="96" y="952" font-family="monospace" font-size="10" fill="#cbd5e1">{cam.focal_length_mm:.0f}mm @ f/{cam.f_stop:.1f} | Sensor 35mm ({cam.sensor_width_mm:.0f}x{cam.sensor_height_mm:.0f}mm) | Dist: {cam_dist_3d:.2f}m</text>')
-    svg.append('  <text x="40" y="969" font-family="monospace" font-size="10.5" fill="#fbbf24" font-weight="bold">LUZES:</text>')
-    svg.append(f'  <text x="96" y="969" font-family="monospace" font-size="10" fill="#cbd5e1">Key: {lights.key_light.intensity:.1f} EV ({key_az:+.0f}°) | Fill: {lights.fill_light.intensity:.1f} EV ({fill_az:+.0f}°) | Rim: {lights.rim_light.intensity:.1f} EV ({rim_az:+.0f}°)</text>')
+    svg.append('  <rect x="20" y="930" width="960" height="52" rx="3" fill="#0e1014" stroke="#1e2229" stroke-width="1.2"/>')
+    svg.append('  <text x="40" y="952" font-family="monospace" font-size="10" fill="#ebb32d" font-weight="bold">ÓPTICA:</text>')
+    svg.append(f'  <text x="96" y="952" font-family="monospace" font-size="9.5" fill="#eaecef">{cam.focal_length_mm:.0f}mm @ f/{cam.f_stop:.1f} | Sensor 35mm ({cam.sensor_width_mm:.0f}x{cam.sensor_height_mm:.0f}mm) | Dist: {cam_dist_3d:.2f}m</text>')
+    svg.append('  <text x="40" y="969" font-family="monospace" font-size="10" fill="#969ba4" font-weight="bold">LUZES:</text>')
+    svg.append(f'  <text x="96" y="969" font-family="monospace" font-size="9.5" fill="#969ba4">Key: {lights.key_light.intensity:.1f} EV ({key_az:+.0f}°) | Fill: {lights.fill_light.intensity:.1f} EV ({fill_az:+.0f}°) | Rim: {lights.rim_light.intensity:.1f} EV ({rim_az:+.0f}°)</text>')
 
     # 1 Meter Visual Scale Ruler
     svg.append('  <g transform="translate(820, 946)">')
-    svg.append('    <line x1="0" y1="10" x2="90" y2="10" stroke="#64748b" stroke-width="2"/>')
-    svg.append('    <line x1="0" y1="4" x2="0" y2="16" stroke="#64748b" stroke-width="2"/>')
-    svg.append('    <line x1="90" y1="4" x2="90" y2="16" stroke="#64748b" stroke-width="2"/>')
-    svg.append('    <text x="45" y="6" font-family="monospace" font-size="9" fill="#94a3b8" text-anchor="middle">ESCALA 1.0m</text>')
+    svg.append('    <line x1="0" y1="10" x2="90" y2="10" stroke="#5c616b" stroke-width="1.8"/>')
+    svg.append('    <line x1="0" y1="4" x2="0" y2="16" stroke="#5c616b" stroke-width="1.8"/>')
+    svg.append('    <line x1="90" y1="4" x2="90" y2="16" stroke="#5c616b" stroke-width="1.8"/>')
+    svg.append('    <text x="45" y="6" font-family="monospace" font-size="8.5" fill="#969ba4" text-anchor="middle">ESCALA 1.0m</text>')
     svg.append('  </g>')
 
     svg.append("</svg>")

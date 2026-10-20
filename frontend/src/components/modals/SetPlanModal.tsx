@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Download, Compass, Sun, Camera, RefreshCw, Sliders, Check, Layers } from 'lucide-react';
 import { useStudioStore } from '../../store/useStudioStore';
 import { useTranslation } from '../../i18n';
@@ -149,14 +150,14 @@ function generateLocalSetPlanSvg(
   for (let mx = -5; mx <= 5; mx++) {
     const [gx] = mToPx(mx, 0);
     const isAxis = mx === 0;
-    const strokeCol = isAxis ? '#2a3241' : '#161b24';
-    const strokeW = isAxis ? '1.5' : '1.0';
+    const strokeCol = isAxis ? '#242830' : '#13161b';
+    const strokeW = isAxis ? '1.4' : '1.0';
     gridLines.push(
-      `<line x1="${gx.toFixed(1)}" y1="110" x2="${gx.toFixed(1)}" y2="920" stroke="${strokeCol}" stroke-width="${strokeW}"/>`
+      `<line x1="${gx.toFixed(1)}" y1="110" x2="${gx.toFixed(1)}" y2="915" stroke="${strokeCol}" stroke-width="${strokeW}"/>`
     );
     if (!isAxis && mx >= -4 && mx <= 4) {
       gridLines.push(
-        `<text x="${gx.toFixed(1)}" y="936" font-family="monospace" font-size="9" fill="#475569" text-anchor="middle">${mx > 0 ? '+' : ''}${mx}m</text>`
+        `<text x="${gx.toFixed(1)}" y="910" font-family="monospace" font-size="9" fill="#5c616b" text-anchor="middle">${mx > 0 ? '+' : ''}${mx}m</text>`
       );
     }
   }
@@ -164,19 +165,19 @@ function generateLocalSetPlanSvg(
   for (let mz = -4; mz <= 4; mz++) {
     const [, gz] = mToPx(0, mz);
     const isAxis = mz === 0;
-    const strokeCol = isAxis ? '#2a3241' : '#161b24';
-    const strokeW = isAxis ? '1.5' : '1.0';
+    const strokeCol = isAxis ? '#242830' : '#13161b';
+    const strokeW = isAxis ? '1.4' : '1.0';
     gridLines.push(
       `<line x1="60" y1="${gz.toFixed(1)}" x2="940" y2="${gz.toFixed(1)}" stroke="${strokeCol}" stroke-width="${strokeW}"/>`
     );
     if (!isAxis) {
       gridLines.push(
-        `<text x="50" y="${(gz + 3).toFixed(1)}" font-family="monospace" font-size="9" fill="#475569" text-anchor="end">${mz > 0 ? '+' : ''}${mz}m</text>`
+        `<text x="50" y="${(gz + 3).toFixed(1)}" font-family="monospace" font-size="9" fill="#5c616b" text-anchor="end">${mz > 0 ? '+' : ''}${mz}m</text>`
       );
     }
   }
 
-  // Objects
+  // Objects (Clean CAD footprints without overlapping center labels)
   const renderedObjects: string[] = [];
   for (const obj of objects) {
     const [ox, oz] = mToPx(obj.position[0], obj.position[2]);
@@ -187,17 +188,17 @@ function generateLocalSetPlanSvg(
     if (obj.type === 'backdrop') {
       renderedObjects.push(`
         <g id="obj-${obj.id}" transform="translate(${ox.toFixed(1)}, ${oz.toFixed(1)}) rotate(${rotDeg.toFixed(1)})">
-          <rect x="${(-wPx / 2).toFixed(1)}" y="${(-dPx / 2).toFixed(1)}" width="${wPx.toFixed(1)}" height="${dPx.toFixed(1)}" rx="12" fill="#151b23" stroke="#374151" stroke-width="2"/>
-          <path d="M ${(-wPx / 2 + 8).toFixed(1)} ${(-dPx / 2 + 10).toFixed(1)} L ${(wPx / 2 - 8).toFixed(1)} ${(-dPx / 2 + 10).toFixed(1)}" stroke="#475569" stroke-width="3" stroke-dasharray="4,4"/>
-          <text x="0" y="5" font-family="monospace" font-size="11" fill="#94a3b8" text-anchor="middle" font-weight="600">${obj.name.toUpperCase()}</text>
-          <text x="0" y="20" font-family="monospace" font-size="9" fill="#64748b" text-anchor="middle">${obj.scale[0].toFixed(1)}m × ${obj.scale[1].toFixed(1)}m</text>
+          <rect x="${(-wPx / 2).toFixed(1)}" y="${(-dPx / 2).toFixed(1)}" width="${wPx.toFixed(1)}" height="${dPx.toFixed(1)}" rx="6" fill="#0b0d10" stroke="#242830" stroke-width="1.5"/>
+          <path d="M ${(-wPx / 2 + 10).toFixed(1)} ${(-dPx / 2 + 10).toFixed(1)} L ${(wPx / 2 - 10).toFixed(1)} ${(-dPx / 2 + 10).toFixed(1)}" stroke="#383e4a" stroke-width="2" stroke-dasharray="4,4"/>
+          <text x="${(wPx / 2 - 12).toFixed(1)}" y="${(dPx / 2 - 10).toFixed(1)}" font-family="monospace" font-size="9" fill="#5c616b" text-anchor="end">${obj.name.toUpperCase()} (${obj.scale[0].toFixed(1)}m × ${obj.scale[1].toFixed(1)}m)</text>
         </g>
       `);
     } else {
+      const distToSubjPx = Math.hypot(ox - subjPx, oz - subjPz);
       renderedObjects.push(`
         <g id="obj-${obj.id}" transform="translate(${ox.toFixed(1)}, ${oz.toFixed(1)}) rotate(${rotDeg.toFixed(1)})">
-          <rect x="${(-wPx / 2).toFixed(1)}" y="${(-dPx / 2).toFixed(1)}" width="${wPx.toFixed(1)}" height="${dPx.toFixed(1)}" rx="4" fill="#1e2430" stroke="#3b82f6" stroke-width="1.2"/>
-          <text x="0" y="4" font-family="monospace" font-size="9" fill="#93c5fd" text-anchor="middle">${obj.name}</text>
+          <rect x="${(-wPx / 2).toFixed(1)}" y="${(-dPx / 2).toFixed(1)}" width="${wPx.toFixed(1)}" height="${dPx.toFixed(1)}" rx="3" fill="#101216" stroke="#2e333d" stroke-width="1.2"/>
+          ${distToSubjPx > 55 ? `<text x="0" y="${(-dPx / 2 - 6).toFixed(1)}" font-family="monospace" font-size="8.5" fill="#969ba4" text-anchor="middle">${obj.name}</text>` : ''}
         </g>
       `);
     }
@@ -212,45 +213,33 @@ function generateLocalSetPlanSvg(
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${svgW} ${svgH}" width="100%" height="100%">
   <defs>
     <radialGradient id="studio-vignette" cx="50%" cy="52%" r="65%">
-      <stop offset="0%" stop-color="#12161f" stop-opacity="0.8"/>
-      <stop offset="60%" stop-color="#0b0c0e" stop-opacity="0.95"/>
-      <stop offset="100%" stop-color="#050607" stop-opacity="1.0"/>
+      <stop offset="0%" stop-color="#0e1014" stop-opacity="0.85"/>
+      <stop offset="65%" stop-color="#08090b" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#050506" stop-opacity="1.0"/>
     </radialGradient>
     <radialGradient id="fov-glow" cx="0%" cy="0%" r="100%">
-      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.18"/>
-      <stop offset="65%" stop-color="#f59e0b" stop-opacity="0.04"/>
-      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0"/>
+      <stop offset="0%" stop-color="#ebb32d" stop-opacity="0.14"/>
+      <stop offset="65%" stop-color="#ebb32d" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#ebb32d" stop-opacity="0.0"/>
     </radialGradient>
-    <linearGradient id="key-beam" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.32"/>
-      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.01"/>
-    </linearGradient>
-    <linearGradient id="fill-beam" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#93c5fd" stop-opacity="0.25"/>
-      <stop offset="100%" stop-color="#93c5fd" stop-opacity="0.01"/>
-    </linearGradient>
-    <linearGradient id="rim-beam" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#c084fc" stop-opacity="0.28"/>
-      <stop offset="100%" stop-color="#c084fc" stop-opacity="0.01"/>
-    </linearGradient>
   </defs>
 
-  <!-- Studio Floor & Blueprint Background -->
-  <rect width="${svgW}" height="${svgH}" fill="#0b0c0e"/>
+  <!-- Studio Floor & Vantablack Blueprint Background -->
+  <rect width="${svgW}" height="${svgH}" fill="#050506"/>
   <rect width="${svgW}" height="${svgH}" fill="url(#studio-vignette)"/>
 
   <!-- Metric Studio Grid (1.0m × 1.0m) -->
-  <g id="metric-grid" opacity="0.65">
+  <g id="metric-grid" opacity="0.75">
     ${gridLines.join('\n    ')}
   </g>
 
   <!-- Title & Blueprint Header -->
   <g id="blueprint-header">
-    <rect x="60" y="30" width="880" height="65" rx="6" fill="#10141d" stroke="#1f2937" stroke-width="1.2"/>
-    <text x="80" y="55" font-family="monospace" font-size="14" fill="#f8fafc" font-weight="700" letter-spacing="1.5">SHOTLAB • STUDIO SET PLAN 2D</text>
-    <text x="80" y="75" font-family="monospace" font-size="10" fill="#94a3b8">DIAGRAMA TÉCNICO TOP-DOWN • ESCALA 1:1 METROS • OPTICAL PRO</text>
-    <text x="920" y="55" font-family="monospace" font-size="11" fill="#f59e0b" font-weight="600" text-anchor="end">CAM: ${camera.focalLengthMm}mm f/${camera.fStop}</text>
-    <text x="920" y="75" font-family="monospace" font-size="10" fill="#64748b" text-anchor="end">HFOV: ${hfovDeg.toFixed(1)}° | DIST: ${(Math.sqrt(camDx * camDx + camDz * camDz)).toFixed(2)}m</text>
+    <rect x="20" y="20" width="960" height="72" rx="3" fill="#0e1014" stroke="#1e2229" stroke-width="1.2"/>
+    <text x="40" y="48" font-family="monospace" font-size="15" fill="#eaecef" font-weight="700" letter-spacing="1">SHOTLAB // SET PLAN 2D BLUEPRINT</text>
+    <text x="40" y="70" font-family="monospace" font-size="10.5" fill="#969ba4">DIAGRAMA TÉCNICO TOP-DOWN • ESCALA 1:1 METROS</text>
+    <text x="940" y="48" font-family="monospace" font-size="11.5" fill="#ebb32d" font-weight="700" text-anchor="end">CAM: ${camera.focalLengthMm}mm f/${camera.fStop}</text>
+    <text x="940" y="70" font-family="monospace" font-size="9.5" fill="#5c616b" text-anchor="end">HFOV: ${hfovDeg.toFixed(1)}° | DIST: ${(Math.sqrt(camDx * camDx + camDz * camDz)).toFixed(2)}m</text>
   </g>
 
   <!-- Scene Objects -->
@@ -258,66 +247,54 @@ function generateLocalSetPlanSvg(
 
   <!-- Camera FOV Light Cone -->
   <path d="M ${camPx.toFixed(1)} ${camPz.toFixed(1)} L ${fovLeftX.toFixed(1)} ${fovLeftZ.toFixed(1)} A ${fovReachPx.toFixed(1)} ${fovReachPx.toFixed(1)} 0 0 1 ${fovRightX.toFixed(1)} ${fovRightZ.toFixed(1)} Z" fill="url(#fov-glow)"/>
-  <line x1="${camPx.toFixed(1)}" y1="${camPz.toFixed(1)}" x2="${fovLeftX.toFixed(1)}" y2="${fovLeftZ.toFixed(1)}" stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.8"/>
-  <line x1="${camPx.toFixed(1)}" y1="${camPz.toFixed(1)}" x2="${fovRightX.toFixed(1)}" y2="${fovRightZ.toFixed(1)}" stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.8"/>
+  <line x1="${camPx.toFixed(1)}" y1="${camPz.toFixed(1)}" x2="${fovLeftX.toFixed(1)}" y2="${fovLeftZ.toFixed(1)}" stroke="#ebb32d" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.8"/>
+  <line x1="${camPx.toFixed(1)}" y1="${camPz.toFixed(1)}" x2="${fovRightX.toFixed(1)}" y2="${fovRightZ.toFixed(1)}" stroke="#ebb32d" stroke-width="1.2" stroke-dasharray="6,4" opacity="0.8"/>
 
   <!-- Optical Sight Line (Camera -> Subject) -->
-  <line x1="${camPx.toFixed(1)}" y1="${camPz.toFixed(1)}" x2="${subjPx.toFixed(1)}" y2="${subjPz.toFixed(1)}" stroke="#f59e0b" stroke-width="1.8"/>
+  <line x1="${camPx.toFixed(1)}" y1="${camPz.toFixed(1)}" x2="${subjPx.toFixed(1)}" y2="${subjPz.toFixed(1)}" stroke="#ebb32d" stroke-width="1.4" stroke-dasharray="3,3"/>
 
   <!-- Light Beam Lines to Subject -->
-  <line x1="${kPx.toFixed(1)}" y1="${kPz.toFixed(1)}" x2="${subjPx.toFixed(1)}" y2="${subjPz.toFixed(1)}" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.75"/>
-  <line x1="${fPx.toFixed(1)}" y1="${fPz.toFixed(1)}" x2="${subjPx.toFixed(1)}" y2="${subjPz.toFixed(1)}" stroke="#93c5fd" stroke-width="1.2" stroke-dasharray="4,3" opacity="0.75"/>
-  <line x1="${rPx.toFixed(1)}" y1="${rPz.toFixed(1)}" x2="${subjPx.toFixed(1)}" y2="${subjPz.toFixed(1)}" stroke="#c084fc" stroke-width="1.2" stroke-dasharray="4,3" opacity="0.75"/>
+  <line x1="${kPx.toFixed(1)}" y1="${kPz.toFixed(1)}" x2="${subjPx.toFixed(1)}" y2="${subjPz.toFixed(1)}" stroke="#ebb32d" stroke-width="1.2" stroke-dasharray="3,3" opacity="0.5"/>
+  <line x1="${fPx.toFixed(1)}" y1="${fPz.toFixed(1)}" x2="${subjPx.toFixed(1)}" y2="${subjPz.toFixed(1)}" stroke="#eaecef" stroke-width="1.0" stroke-dasharray="3,3" opacity="0.45"/>
+  <line x1="${rPx.toFixed(1)}" y1="${rPz.toFixed(1)}" x2="${subjPx.toFixed(1)}" y2="${subjPz.toFixed(1)}" stroke="#969ba4" stroke-width="1.0" stroke-dasharray="3,3" opacity="0.45"/>
 
-  <!-- Key Light Modifier Graphic (Softbox) -->
+  <!-- Key Light Modifier Graphic -->
   <g id="light-key" transform="translate(${kPx.toFixed(1)}, ${kPz.toFixed(1)})">
-    <circle cx="0" cy="0" r="16" fill="#1c1917" stroke="#fbbf24" stroke-width="2"/>
-    <rect x="-12" y="-6" width="24" height="12" rx="2" fill="#fbbf24" opacity="0.9"/>
-    <text x="0" y="28" font-family="monospace" font-size="10" fill="#fbbf24" font-weight="700" text-anchor="middle">KEY LIGHT</text>
-    <text x="0" y="40" font-family="monospace" font-size="8" fill="#d97706" text-anchor="middle">${lighting.keyLight.intensity.toFixed(1)}x | Y: ${lighting.keyLight.position[1].toFixed(1)}m</text>
+    <rect x="-12" y="-7" width="24" height="14" rx="2" fill="#171a20" stroke="#ebb32d" stroke-width="1.6"/>
+    <text x="0" y="24" font-family="monospace" font-size="9.5" fill="#ebb32d" font-weight="700" text-anchor="middle">KEY LIGHT</text>
+    <text x="0" y="36" font-family="monospace" font-size="8" fill="#969ba4" text-anchor="middle">${lighting.keyLight.intensity.toFixed(1)}x | H: ${lighting.keyLight.position[1].toFixed(1)}m</text>
   </g>
 
   <!-- Fill Light Modifier Graphic -->
   <g id="light-fill" transform="translate(${fPx.toFixed(1)}, ${fPz.toFixed(1)})">
-    <circle cx="0" cy="0" r="14" fill="#0f172a" stroke="#93c5fd" stroke-width="1.8"/>
-    <rect x="-10" y="-5" width="20" height="10" rx="2" fill="#93c5fd" opacity="0.85"/>
-    <text x="0" y="26" font-family="monospace" font-size="10" fill="#93c5fd" font-weight="700" text-anchor="middle">FILL LIGHT</text>
-    <text x="0" y="38" font-family="monospace" font-size="8" fill="#60a5fa" text-anchor="middle">${lighting.fillLight.intensity.toFixed(1)}x | Y: ${lighting.fillLight.position[1].toFixed(1)}m</text>
+    <circle cx="0" cy="0" r="12" fill="#171a20" stroke="#eaecef" stroke-width="1.6"/>
+    <text x="0" y="24" font-family="monospace" font-size="9.5" fill="#eaecef" font-weight="700" text-anchor="middle">FILL LIGHT</text>
+    <text x="0" y="36" font-family="monospace" font-size="8" fill="#969ba4" text-anchor="middle">${lighting.fillLight.intensity.toFixed(1)}x | H: ${lighting.fillLight.position[1].toFixed(1)}m</text>
   </g>
 
   <!-- Rim Light Modifier Graphic -->
   <g id="light-rim" transform="translate(${rPx.toFixed(1)}, ${rPz.toFixed(1)})">
-    <circle cx="0" cy="0" r="13" fill="#180d24" stroke="#c084fc" stroke-width="1.8"/>
-    <rect x="-9" y="-4" width="18" height="8" rx="2" fill="#c084fc" opacity="0.85"/>
-    <text x="0" y="25" font-family="monospace" font-size="10" fill="#c084fc" font-weight="700" text-anchor="middle">RIM LIGHT</text>
-    <text x="0" y="37" font-family="monospace" font-size="8" fill="#a855f7" text-anchor="middle">${lighting.rimLight.intensity.toFixed(1)}x | Y: ${lighting.rimLight.position[1].toFixed(1)}m</text>
+    <rect x="-14" y="-5" width="28" height="10" rx="2" fill="#171a20" stroke="#969ba4" stroke-width="1.6"/>
+    <text x="0" y="-22" font-family="monospace" font-size="9.5" fill="#969ba4" font-weight="700" text-anchor="middle">RIM LIGHT</text>
+    <text x="0" y="-11" font-family="monospace" font-size="8" fill="#5c616b" text-anchor="middle">${lighting.rimLight.intensity.toFixed(1)}x | H: ${lighting.rimLight.position[1].toFixed(1)}m</text>
   </g>
 
   <!-- Primary Subject Target -->
   <g id="subject-target" transform="translate(${subjPx.toFixed(1)}, ${subjPz.toFixed(1)})">
-    <circle cx="0" cy="0" r="22" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/>
-    <circle cx="0" cy="0" r="8" fill="#38bdf8"/>
-    <line x1="-28" y1="0" x2="28" y2="0" stroke="#38bdf8" stroke-width="1.2"/>
-    <line x1="0" y1="-28" x2="0" y2="28" stroke="#38bdf8" stroke-width="1.2"/>
-    <text x="0" y="-32" font-family="monospace" font-size="11" fill="#38bdf8" font-weight="700" text-anchor="middle">${subjectName.toUpperCase()}</text>
+    <circle cx="0" cy="0" r="14" fill="#08090b" stroke="#eaecef" stroke-width="1.5"/>
+    <circle cx="0" cy="0" r="4.5" fill="#ebb32d"/>
+    <line x1="-22" y1="0" x2="22" y2="0" stroke="#eaecef" stroke-width="1" stroke-dasharray="2,2"/>
+    <line x1="0" y1="-22" x2="0" y2="22" stroke="#eaecef" stroke-width="1" stroke-dasharray="2,2"/>
+    <rect x="20" y="-11" width="148" height="22" rx="2" fill="#08090b" stroke="#383e4a" stroke-width="1"/>
+    <text x="94" y="3" font-family="monospace" font-size="8.5" fill="#eaecef" font-weight="700" text-anchor="middle">${subjectName.toUpperCase()}</text>
   </g>
 
   <!-- Camera Graphic Body -->
   <g id="camera-body" transform="translate(${camPx.toFixed(1)}, ${camPz.toFixed(1)})">
-    <circle cx="0" cy="0" r="24" fill="#0f172a" stroke="#f59e0b" stroke-width="2.5"/>
-    <polygon points="0,-18 14,12 -14,12" fill="#f59e0b"/>
-    <circle cx="0" cy="0" r="6" fill="#0f172a"/>
-    <text x="0" y="34" font-family="monospace" font-size="11" fill="#f59e0b" font-weight="700" text-anchor="middle">CAMERA</text>
-    <text x="0" y="47" font-family="monospace" font-size="8" fill="#d97706" text-anchor="middle">Y: ${camera.position[1].toFixed(2)}m</text>
-  </g>
-
-  <!-- Compass Rose -->
-  <g id="compass" transform="translate(900, 160)">
-    <circle cx="0" cy="0" r="20" fill="#111827" stroke="#374151" stroke-width="1"/>
-    <line x1="0" y1="-16" x2="0" y2="16" stroke="#475569" stroke-width="1"/>
-    <line x1="-16" y1="0" x2="16" y2="0" stroke="#475569" stroke-width="1"/>
-    <polygon points="0,-18 4,-6 -4,-6" fill="#ef4444"/>
-    <text x="0" y="-22" font-family="monospace" font-size="9" fill="#ef4444" font-weight="700" text-anchor="middle">N (-Z)</text>
+    <rect x="-16" y="-11" width="32" height="22" rx="2" fill="#171a20" stroke="#ebb32d" stroke-width="1.8"/>
+    <circle cx="0" cy="-14" r="4" fill="#ebb32d"/>
+    <text x="0" y="28" font-family="monospace" font-size="10" fill="#ebb32d" font-weight="700" text-anchor="middle">CAMERA</text>
+    <text x="0" y="40" font-family="monospace" font-size="8" fill="#969ba4" text-anchor="middle">H: ${camera.position[1].toFixed(2)}m</text>
   </g>
 </svg>
   `.trim();
@@ -508,19 +485,19 @@ export const SetPlanModal: React.FC<SetPlanModalProps> = ({ isOpen, onClose }) =
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
-        className="flex flex-col bg-[#0b0c0e] border border-[#2a303c] rounded-md shadow-2xl w-full max-w-6xl max-h-[92vh] overflow-hidden text-secondary-text font-sans"
+        className="flex flex-col bg-surface border border-hairline rounded-sm shadow-2xl w-full max-w-6xl max-h-[92vh] overflow-hidden text-secondary-text font-sans"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Top Bar */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#1e2430] bg-[#12161f]">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-hairline bg-chassis">
           <div className="flex items-center space-x-3">
             <div className="p-2 rounded-sm bg-optic/10 border border-optic/30 text-optic">
               <Compass className="w-5 h-5" />
@@ -531,7 +508,7 @@ export const SetPlanModal: React.FC<SetPlanModalProps> = ({ isOpen, onClose }) =
                   {t.setPlan.modalTitle}
                 </h2>
                 {data?.isOffline && (
-                  <span className="px-1.5 py-0.5 rounded-sm bg-amber-500/15 border border-amber-500/40 text-[9px] font-mono text-amber-400">
+                  <span className="px-1.5 py-0.5 rounded-sm bg-optic/15 border border-optic/40 text-[9px] font-mono text-optic">
                     OFFLINE / LOCAL SVG
                   </span>
                 )}
@@ -555,7 +532,7 @@ export const SetPlanModal: React.FC<SetPlanModalProps> = ({ isOpen, onClose }) =
             <button
               onClick={handleDownloadSvg}
               disabled={!data?.svg}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-sm bg-optic hover:bg-optic/90 text-black font-mono text-xs font-semibold shadow transition-all active:scale-95"
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-sm bg-optic hover:bg-optic/90 text-void font-mono text-xs font-semibold shadow transition-all active:scale-95"
             >
               {downloadSuccess ? (
                 <>
@@ -581,9 +558,9 @@ export const SetPlanModal: React.FC<SetPlanModalProps> = ({ isOpen, onClose }) =
         </div>
 
         {/* Modal Main Content: Left SVG Blueprint / Right Metrics Panel */}
-        <div className="flex flex-1 overflow-hidden divide-x divide-[#1e2430]">
+        <div className="flex flex-1 overflow-hidden divide-x divide-hairline">
           {/* Left: 2D Set Plan Vector Viewport */}
-          <div className="flex-1 bg-[#050607] p-3 flex items-center justify-center relative overflow-hidden select-none">
+          <div className="flex-1 bg-void p-3 flex items-center justify-center relative overflow-hidden select-none">
             {isLoading ? (
               <div className="flex flex-col items-center space-y-2 text-muted-text font-mono text-xs">
                 <RefreshCw className="w-6 h-6 animate-spin text-optic" />
@@ -600,9 +577,9 @@ export const SetPlanModal: React.FC<SetPlanModalProps> = ({ isOpen, onClose }) =
           </div>
 
           {/* Right: Telemetry & Photometric Measurements Sidebar */}
-          <div className="w-84 max-w-sm bg-[#0e1117] p-4 overflow-y-auto space-y-4 text-xs font-mono">
+          <div className="w-84 max-w-sm bg-surface p-4 overflow-y-auto space-y-4 text-xs font-mono">
             {/* Camera Optics Telemetry */}
-            <div className="bg-[#141822] p-3 rounded-sm border border-[#222a38] space-y-2">
+            <div className="bg-elevated p-3 rounded-sm border border-hairline space-y-2">
               <div className="flex items-center space-x-1.5 text-[10px] text-optic font-semibold uppercase tracking-wider">
                 <Camera className="w-3.5 h-3.5" />
                 <span>Câmera & Óptica Real</span>
@@ -628,7 +605,7 @@ export const SetPlanModal: React.FC<SetPlanModalProps> = ({ isOpen, onClose }) =
             </div>
 
             {/* Distances to Subject (tabular-nums in meters) */}
-            <div className="bg-[#141822] p-3 rounded-sm border border-[#222a38] space-y-2">
+            <div className="bg-elevated p-3 rounded-sm border border-hairline space-y-2">
               <div className="flex items-center justify-between text-[10px] text-primary-text font-semibold uppercase tracking-wider">
                 <div className="flex items-center space-x-1.5">
                   <Sliders className="w-3.5 h-3.5 text-optic" />
@@ -638,33 +615,33 @@ export const SetPlanModal: React.FC<SetPlanModalProps> = ({ isOpen, onClose }) =
               </div>
 
               <div className="space-y-1.5 pt-1 tabular-nums">
-                <div className="flex justify-between items-center py-1 border-b border-[#1f2735] text-[11px]">
-                  <span className="text-muted-text flex items-center space-x-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                <div className="flex justify-between items-center py-1 border-b border-hairline text-[11px]">
+                  <span className="text-muted-text flex items-center space-x-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-optic inline-block" />
                     <span>Câmera → Sujeito</span>
                   </span>
                   <span className="text-primary-text font-bold text-xs">{data?.camera.distanceToSubjectM.toFixed(2)} m</span>
                 </div>
 
-                <div className="flex justify-between items-center py-1 border-b border-[#1f2735] text-[11px]">
-                  <span className="text-muted-text flex items-center space-x-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#fbbf24] inline-block" />
+                <div className="flex justify-between items-center py-1 border-b border-hairline text-[11px]">
+                  <span className="text-muted-text flex items-center space-x-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-optic inline-block" />
                     <span>Key Light → Sujeito</span>
                   </span>
                   <span className="text-primary-text font-bold">{data?.lightingAnalysis.key.dist3d.toFixed(2)} m</span>
                 </div>
 
-                <div className="flex justify-between items-center py-1 border-b border-[#1f2735] text-[11px]">
-                  <span className="text-muted-text flex items-center space-x-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#93c5fd] inline-block" />
+                <div className="flex justify-between items-center py-1 border-b border-hairline text-[11px]">
+                  <span className="text-muted-text flex items-center space-x-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary-text inline-block" />
                     <span>Fill Light → Sujeito</span>
                   </span>
                   <span className="text-primary-text font-bold">{data?.lightingAnalysis.fill.dist3d.toFixed(2)} m</span>
                 </div>
 
                 <div className="flex justify-between items-center py-1 text-[11px]">
-                  <span className="text-muted-text flex items-center space-x-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#c084fc] inline-block" />
+                  <span className="text-muted-text flex items-center space-x-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-secondary-text inline-block" />
                     <span>Rim Light → Sujeito</span>
                   </span>
                   <span className="text-primary-text font-bold">{data?.lightingAnalysis.rim.dist3d.toFixed(2)} m</span>
@@ -673,18 +650,18 @@ export const SetPlanModal: React.FC<SetPlanModalProps> = ({ isOpen, onClose }) =
             </div>
 
             {/* Lighting Angles: Azimuth & Elevation */}
-            <div className="bg-[#141822] p-3 rounded-sm border border-[#222a38] space-y-2.5">
+            <div className="bg-elevated p-3 rounded-sm border border-hairline space-y-2.5">
               <div className="flex items-center space-x-1.5 text-[10px] text-primary-text font-semibold uppercase tracking-wider">
                 <Sun className="w-3.5 h-3.5 text-optic" />
                 <span>Ângulos de Iluminação (Estúdio)</span>
               </div>
 
               {/* Key Light Card */}
-              <div className="p-2 rounded-sm bg-[#0a0d13] border border-[#1f2735] space-y-1">
+              <div className="p-2 rounded-sm bg-chassis border border-hairline space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
                   <div className="flex items-center space-x-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full border border-hairline" style={{ backgroundColor: data?.lightingAnalysis.key.color }} />
-                    <span className="font-semibold text-[#fbbf24] text-[10px] uppercase">Key Light</span>
+                    <div className="w-2 h-2 rounded-full bg-optic" />
+                    <span className="font-semibold text-optic text-[10px] uppercase">Key Light</span>
                   </div>
                   <span className="text-muted-text text-[10px] tabular-nums">{data?.lightingAnalysis.key.intensity.toFixed(1)}x</span>
                 </div>
@@ -695,11 +672,11 @@ export const SetPlanModal: React.FC<SetPlanModalProps> = ({ isOpen, onClose }) =
               </div>
 
               {/* Fill Light Card */}
-              <div className="p-2 rounded-sm bg-[#0a0d13] border border-[#1f2735] space-y-1">
+              <div className="p-2 rounded-sm bg-chassis border border-hairline space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
                   <div className="flex items-center space-x-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full border border-hairline" style={{ backgroundColor: data?.lightingAnalysis.fill.color }} />
-                    <span className="font-semibold text-[#93c5fd] text-[10px] uppercase">Fill Light</span>
+                    <div className="w-2 h-2 rounded-full bg-primary-text" />
+                    <span className="font-semibold text-primary-text text-[10px] uppercase">Fill Light</span>
                   </div>
                   <span className="text-muted-text text-[10px] tabular-nums">{data?.lightingAnalysis.fill.intensity.toFixed(1)}x</span>
                 </div>
@@ -710,11 +687,11 @@ export const SetPlanModal: React.FC<SetPlanModalProps> = ({ isOpen, onClose }) =
               </div>
 
               {/* Rim Light Card */}
-              <div className="p-2 rounded-sm bg-[#0a0d13] border border-[#1f2735] space-y-1">
+              <div className="p-2 rounded-sm bg-chassis border border-hairline space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
                   <div className="flex items-center space-x-1.5">
-                    <div className="w-2.5 h-2.5 rounded-full border border-hairline" style={{ backgroundColor: data?.lightingAnalysis.rim.color }} />
-                    <span className="font-semibold text-[#c084fc] text-[10px] uppercase">Rim Light</span>
+                    <div className="w-2 h-2 rounded-full bg-secondary-text" />
+                    <span className="font-semibold text-secondary-text text-[10px] uppercase">Rim Light</span>
                   </div>
                   <span className="text-muted-text text-[10px] tabular-nums">{data?.lightingAnalysis.rim.intensity.toFixed(1)}x</span>
                 </div>
@@ -726,7 +703,7 @@ export const SetPlanModal: React.FC<SetPlanModalProps> = ({ isOpen, onClose }) =
             </div>
 
             {/* Primary Subject Coordinates */}
-            <div className="p-2.5 bg-[#141822] rounded-sm border border-[#222a38] text-[10px] space-y-1">
+            <div className="p-2.5 bg-elevated rounded-sm border border-hairline text-[10px] space-y-1">
               <div className="flex items-center space-x-1 text-muted-text uppercase font-semibold">
                 <Layers className="w-3 h-3 text-optic" />
                 <span>Sujeito: <strong className="text-primary-text">{data?.subject.name}</strong></span>
@@ -738,6 +715,7 @@ export const SetPlanModal: React.FC<SetPlanModalProps> = ({ isOpen, onClose }) =
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

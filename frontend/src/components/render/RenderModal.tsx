@@ -180,8 +180,8 @@ export const RenderModal: React.FC<RenderModalProps> = ({ isOpen, onClose }) => 
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-indigo-400">MOSS-Image</span>
-                  <span className="text-[9px] px-1 py-0.5 rounded-sm bg-indigo-950 text-indigo-300 border border-indigo-700 uppercase">Layout JSON</span>
+                  <span className="font-bold text-primary-text">MOSS-Image</span>
+                  <span className="text-[9px] px-1 py-0.5 rounded-sm bg-chassis text-secondary-text border border-hairline uppercase">Layout JSON</span>
                 </div>
                 <p className="text-[10px] text-muted-text mt-1">Projeção 3D Bounding Box Centralizada</p>
               </button>

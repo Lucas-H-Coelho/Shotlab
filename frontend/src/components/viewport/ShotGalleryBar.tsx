@@ -186,8 +186,8 @@ export const ShotGalleryBar: React.FC = () => {
                       <span
                         className={`font-mono text-[8px] font-bold px-1 py-0.5 rounded-sm uppercase tracking-wider ${
                           isQwen
-                            ? 'bg-optic text-black font-semibold'
-                            : 'bg-indigo-950 text-indigo-300 border border-indigo-700'
+                            ? 'bg-optic text-void font-semibold'
+                            : 'bg-chassis text-primary-text border border-hairline'
                         }`}
                       >
                         {isQwen ? t.gallery.engineQwen : t.gallery.engineMoss}
@@ -201,7 +201,7 @@ export const ShotGalleryBar: React.FC = () => {
                         deleteTake(take.id);
                       }}
                       title={t.gallery.deleteTake}
-                      className="absolute top-1 right-1 p-1 bg-void/80 hover:bg-red-950/90 text-muted-text hover:text-red-400 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-1 right-1 p-1 bg-void/80 hover:bg-elevated text-muted-text hover:text-primary-text rounded-sm opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <Trash2 className="w-2.5 h-2.5" />
                     </button>

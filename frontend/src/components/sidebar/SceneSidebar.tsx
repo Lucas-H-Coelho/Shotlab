@@ -270,7 +270,7 @@ export const SceneSidebar: React.FC<SceneSidebarProps> = ({ className = '' }) =>
           </span>
         </div>
         <div className="flex items-center space-x-1 text-[10px] font-mono text-muted-text">
-          <span className="w-1.5 h-1.5 rounded-full bg-status-ok"></span>
+          <span className="w-1.5 h-1.5 rounded-full bg-optic"></span>
           <span className="tabular-nums">{objects.length} Objs</span>
         </div>
       </div>
@@ -405,8 +405,9 @@ export const SceneSidebar: React.FC<SceneSidebarProps> = ({ className = '' }) =>
                     >
                       <div className="flex items-center space-x-2 truncate">
                         <div
-                          className="w-2.5 h-2.5 rounded-full shrink-0 border border-hairline"
-                          style={{ backgroundColor: obj.material.color }}
+                          className={`w-2 h-2 rounded-full shrink-0 ${
+                            isSelected ? 'bg-optic' : 'bg-muted-text/60'
+                          }`}
                         />
                         <span className="truncate font-mono text-[11px] font-medium">{obj.name}</span>
                       </div>
@@ -462,7 +463,7 @@ export const SceneSidebar: React.FC<SceneSidebarProps> = ({ className = '' }) =>
                                 e.stopPropagation();
                                 removeObject(obj.id);
                               }}
-                              className="p-1 text-tally/80 hover:text-tally rounded transition-colors"
+                              className="p-1 text-muted-text hover:text-primary-text rounded transition-colors"
                               title="Excluir Objeto"
                             >
                               <Trash2 className="w-3 h-3" />
@@ -483,17 +484,14 @@ export const SceneSidebar: React.FC<SceneSidebarProps> = ({ className = '' }) =>
                   <Sun className="w-3 h-3 text-optic" />
                   <span>Setup de Iluminação (3 Pontos)</span>
                 </div>
-                <span className="text-[9px] text-status-ok font-mono">Calibrado</span>
+                <span className="text-[9px] text-muted-text font-mono">3 Luzes</span>
               </div>
 
               <div className="space-y-1.5 font-mono text-[10px]">
                 {/* Key Light */}
                 <div className="flex items-center justify-between px-2 py-1.5 rounded-sm bg-elevated border border-hairline">
                   <div className="flex items-center space-x-2">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full border border-hairline"
-                      style={{ backgroundColor: lighting.keyLight.color }}
-                    />
+                    <span className="w-2 h-2 rounded-full bg-optic" />
                     <span className="text-primary-text font-medium">Key Light</span>
                   </div>
                   <div className="flex items-center space-x-2 text-muted-text tabular-nums">
@@ -507,10 +505,7 @@ export const SceneSidebar: React.FC<SceneSidebarProps> = ({ className = '' }) =>
                 {/* Fill Light */}
                 <div className="flex items-center justify-between px-2 py-1.5 rounded-sm bg-elevated border border-hairline">
                   <div className="flex items-center space-x-2">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full border border-hairline"
-                      style={{ backgroundColor: lighting.fillLight.color }}
-                    />
+                    <span className="w-2 h-2 rounded-full bg-primary-text/80" />
                     <span className="text-primary-text font-medium">Fill Light</span>
                   </div>
                   <div className="text-muted-text tabular-nums">
@@ -521,10 +516,7 @@ export const SceneSidebar: React.FC<SceneSidebarProps> = ({ className = '' }) =>
                 {/* Rim Light */}
                 <div className="flex items-center justify-between px-2 py-1.5 rounded-sm bg-elevated border border-hairline">
                   <div className="flex items-center space-x-2">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full border border-hairline"
-                      style={{ backgroundColor: lighting.rimLight.color }}
-                    />
+                    <span className="w-2 h-2 rounded-full bg-secondary-text" />
                     <span className="text-primary-text font-medium">Rim Light</span>
                   </div>
                   <div className="text-muted-text tabular-nums">
@@ -535,10 +527,7 @@ export const SceneSidebar: React.FC<SceneSidebarProps> = ({ className = '' }) =>
                 {/* Ambient Light */}
                 <div className="flex items-center justify-between px-2 py-1.5 rounded-sm bg-elevated border border-hairline">
                   <div className="flex items-center space-x-2">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full border border-hairline"
-                      style={{ backgroundColor: lighting.ambientColor }}
-                    />
+                    <span className="w-2 h-2 rounded-full bg-muted-text" />
                     <span className="text-primary-text font-medium">Luz Ambiente</span>
                   </div>
                   <div className="text-muted-text tabular-nums">
@@ -562,7 +551,7 @@ export const SceneSidebar: React.FC<SceneSidebarProps> = ({ className = '' }) =>
                   <Aperture className="w-3 h-3" />
                   <span>Telemetria Óptica Ativa</span>
                 </div>
-                <span className="font-mono text-[9px] text-status-ok">Full-Frame Link</span>
+                <span className="font-mono text-[9px] text-muted-text">Full-Frame</span>
               </div>
 
               <div className="grid grid-cols-2 gap-2 font-mono text-[10px]">
@@ -751,7 +740,7 @@ export const SceneSidebar: React.FC<SceneSidebarProps> = ({ className = '' }) =>
                           "{lens.character}"
                         </span>
                         {lens.squeeze > 1.0 && (
-                          <span className="text-tally font-mono font-semibold shrink-0 uppercase text-[8px]">
+                          <span className="text-optic font-mono font-semibold shrink-0 uppercase text-[8px]">
                             2.39:1 Squeeze
                           </span>
                         )}
@@ -820,14 +809,11 @@ export const SceneSidebar: React.FC<SceneSidebarProps> = ({ className = '' }) =>
                       <div className="flex items-start justify-between">
                         <div className="flex items-center space-x-2">
                           {/* Item Category Visual Badge */}
-                          <div
-                            className="w-4 h-4 rounded-sm flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: item.material.color }}
-                          >
+                          <div className="w-4 h-4 rounded-sm bg-chassis border border-hairline flex items-center justify-center shrink-0">
                             {item.category === 'mannequins' ? (
-                              <User className="w-2.5 h-2.5 text-void" />
+                              <User className="w-2.5 h-2.5 text-optic" />
                             ) : (
-                              <Package className="w-2.5 h-2.5 text-void" />
+                              <Package className="w-2.5 h-2.5 text-secondary-text" />
                             )}
                           </div>
                           <div>

@@ -61,34 +61,36 @@ export const SceneMesh: React.FC<SceneMeshProps> = ({ object }) => {
             </mesh>
           </group>
         );
-      case 'backdrop':
-        // Seamless curved cyclorama / studio backdrop
+      case 'backdrop': {
+        // Seamless studio cyclorama (back wall + floor apron) without double-scaling
+        const w = object.scale[0] || 6.0;
+        const h = object.scale[1] || 3.5;
+        const d = object.scale[2] || 2.5;
         return (
           <group>
             {/* Vertical back wall */}
-            <mesh position={[0, 1.5, 0]} receiveShadow>
-              <planeGeometry args={[object.scale[0], 3]} />
+            <mesh position={[0, h / 2, 0]} receiveShadow>
+              <planeGeometry args={[w, h]} />
               <meshStandardMaterial
-                color={object.material.color}
-                roughness={object.material.roughness}
-                metalness={object.material.metalness}
+                color="#1c2026"
+                roughness={0.9}
+                metalness={0.05}
                 side={THREE.DoubleSide}
               />
             </mesh>
-            {/* Curved base connecting wall to floor */}
-            <mesh position={[0, 0.4, 0.4]} rotation={[0, 0, 0]} receiveShadow>
-              <cylinderGeometry
-                args={[0.8, 0.8, object.scale[0], 32, 1, true, 0, Math.PI / 2]}
-              />
+            {/* Floor apron extending forward in +Z */}
+            <mesh position={[0, 0.002, d / 2]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+              <planeGeometry args={[w, d]} />
               <meshStandardMaterial
-                color={object.material.color}
-                roughness={object.material.roughness}
-                metalness={object.material.metalness}
+                color="#181b20"
+                roughness={0.92}
+                metalness={0.05}
                 side={THREE.DoubleSide}
               />
             </mesh>
           </group>
         );
+      }
       default:
         return <boxGeometry args={[1, 1, 1]} />;
     }
@@ -96,13 +98,18 @@ export const SceneMesh: React.FC<SceneMeshProps> = ({ object }) => {
 
   if (!object.visible) return null;
 
+  const groupPosition: [number, number, number] =
+    object.type === 'backdrop'
+      ? [object.position[0], 0, object.position[2]]
+      : object.position;
+
   return (
     <group
       ref={meshRef}
       name={object.id}
-      position={object.position}
+      position={groupPosition}
       rotation={object.rotation}
-      scale={object.type === 'table' ? [1, 1, 1] : object.scale}
+      scale={object.type === 'table' || object.type === 'backdrop' ? [1, 1, 1] : object.scale}
       onClick={handleClick}
     >
       {object.type === 'table' || object.type === 'backdrop' ? (
@@ -131,7 +138,7 @@ export const SceneMesh: React.FC<SceneMeshProps> = ({ object }) => {
                 : new THREE.BoxGeometry(1.04, 1.04, 1.04),
             ]}
           />
-          <lineBasicMaterial color="#38bdf8" linewidth={2} />
+          <lineBasicMaterial color="#ebb32d" linewidth={2} />
         </lineSegments>
       )}
     </group>

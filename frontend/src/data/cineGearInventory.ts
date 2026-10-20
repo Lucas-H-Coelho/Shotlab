@@ -705,9 +705,9 @@ export const STUDIO_CATALOG_ITEMS: StudioCatalogItem[] = [
       radius: 0.04,
     },
     material: {
-      color: '#059669',
+      color: '#383e4a',
       roughness: 0.15,
-      metalness: 0.1,
+      metalness: 0.4,
     },
     license: 'CC0 Public Domain',
     tags: ['garrafa', 'frasco', 'cosmético', 'vidro', 'hero'],

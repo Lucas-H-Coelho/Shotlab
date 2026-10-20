@@ -200,64 +200,64 @@ export const CameraHelperVisualizer: React.FC = () => {
         {/* Front Lens Glass element */}
         <mesh position={[0, 0, -0.141]} rotation={[Math.PI / 2, 0, 0]}>
           <circleGeometry args={[0.06, 24]} />
-          <meshStandardMaterial color="#0284c7" metalness={0.95} roughness={0.05} />
+          <meshStandardMaterial color="#1e2229" metalness={0.95} roughness={0.05} />
         </mesh>
       </group>
 
       {/* Target Marker */}
       <mesh position={target}>
         <sphereGeometry args={[0.035, 16, 16]} />
-        <meshBasicMaterial color="#f59e0b" wireframe />
+        <meshBasicMaterial color="#ebb32d" wireframe />
       </mesh>
 
       {/* Frustum Outer Wireframe Rays */}
       <lineSegments geometry={helperGeometries.frustumRaysGeom}>
-        <lineBasicMaterial color="#71717a" opacity={0.45} transparent />
+        <lineBasicMaterial color="#5c616b" opacity={0.4} transparent />
       </lineSegments>
 
-      {/* 3D Sharpness Corridor (DoF Volume Lines) */}
+      {/* 3D Sharpness Corridor (DoF Volume Lines - Monochromatic Pewter) */}
       <lineSegments geometry={helperGeometries.corridorGeom}>
-        <lineBasicMaterial color="#38bdf8" opacity={0.5} transparent />
+        <lineBasicMaterial color="#969ba4" opacity={0.35} transparent />
       </lineSegments>
 
-      {/* 1. Near DoF Limit Plane (Cyan #38bdf8) */}
+      {/* 1. Near DoF Limit Plane (Pewter #969ba4) */}
       <mesh geometry={helperGeometries.nearMeshGeom}>
         <meshBasicMaterial
-          color="#38bdf8"
-          opacity={0.12}
+          color="#969ba4"
+          opacity={0.05}
           transparent
           depthWrite={false}
           side={THREE.DoubleSide}
         />
       </mesh>
       <lineSegments geometry={helperGeometries.nearFrameGeom}>
-        <lineBasicMaterial color="#38bdf8" opacity={0.8} transparent />
+        <lineBasicMaterial color="#969ba4" opacity={0.55} transparent />
       </lineSegments>
 
-      {/* 2. Focus Distance Plane (Amber #f59e0b) */}
+      {/* 2. Focus Distance Plane (Cine Amber #ebb32d) */}
       <mesh geometry={helperGeometries.focusMeshGeom}>
         <meshBasicMaterial
-          color="#f59e0b"
-          opacity={0.18}
+          color="#ebb32d"
+          opacity={0.10}
           transparent
           depthWrite={false}
           side={THREE.DoubleSide}
         />
       </mesh>
       <lineSegments geometry={helperGeometries.focusFrameGeom}>
-        <lineBasicMaterial color="#f59e0b" opacity={0.9} transparent />
+        <lineBasicMaterial color="#ebb32d" opacity={0.85} transparent />
       </lineSegments>
       {/* Focus Center Crosshair */}
       <lineSegments geometry={helperGeometries.focusCrosshairGeom}>
-        <lineBasicMaterial color="#f59e0b" opacity={1.0} />
+        <lineBasicMaterial color="#ebb32d" opacity={0.95} />
       </lineSegments>
 
-      {/* 3. Far DoF Limit Plane (Emerald #10b981 - when finite) */}
+      {/* 3. Far DoF Limit Plane (Pewter #969ba4 - when finite) */}
       {helperGeometries.isFiniteFar && helperGeometries.farMeshGeom && (
         <mesh geometry={helperGeometries.farMeshGeom}>
           <meshBasicMaterial
-            color="#10b981"
-            opacity={0.12}
+            color="#969ba4"
+            opacity={0.05}
             transparent
             depthWrite={false}
             side={THREE.DoubleSide}
@@ -266,7 +266,7 @@ export const CameraHelperVisualizer: React.FC = () => {
       )}
       {helperGeometries.isFiniteFar && helperGeometries.farFrameGeom && (
         <lineSegments geometry={helperGeometries.farFrameGeom}>
-          <lineBasicMaterial color="#10b981" opacity={0.8} transparent />
+          <lineBasicMaterial color="#969ba4" opacity={0.55} transparent />
         </lineSegments>
       )}
     </group>

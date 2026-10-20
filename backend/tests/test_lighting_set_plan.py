@@ -241,8 +241,8 @@ def test_generate_set_plan_svg_validity_and_contents():
     assert root.tag.endswith("svg")
 
     # 2. Vantablack theme colors & optical accent
-    assert "#0b0c0e" in svg_text  # Background
-    assert "#f59e0b" in svg_text  # Camera FOV accent optic
+    assert "#050506" in svg_text  # Vantablack Background (--bg-void)
+    assert "#ebb32d" in svg_text  # Camera FOV accent optic (--accent-optic)
     assert "SHOTLAB // SET PLAN 2D BLUEPRINT" in svg_text
     assert "1.0m × 1.0m" in svg_text
 
