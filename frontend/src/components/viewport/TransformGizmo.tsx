@@ -51,8 +51,9 @@ export const TransformGizmo: React.FC<TransformGizmoProps> = ({ onDraggingChange
         const rot = targetObject.rotation;
         const sca = targetObject.scale;
 
-        // Prevent sinking below floor (Y contact principle)
-        const adjustedY = Math.max(0, pos.y);
+        // Prevent sinking below floor (Y contact principle - Blender PLACE_ORIGIN_BASE)
+        const minY = selectedObject ? (selectedObject.type === 'backdrop' ? 0 : sca.y * 0.5) : 0;
+        const adjustedY = Math.max(minY, pos.y);
 
         updateObject(selectedObjectId, {
           position: [pos.x, adjustedY, pos.z],
@@ -66,7 +67,7 @@ export const TransformGizmo: React.FC<TransformGizmoProps> = ({ onDraggingChange
     return () => {
       controls.removeEventListener('dragging-changed', handleDraggingChanged);
     };
-  }, [targetObject, selectedObjectId, onDraggingChange, updateObject]);
+  }, [targetObject, selectedObjectId, selectedObject, onDraggingChange, updateObject]);
 
   if (!targetObject || isLocked) return null;
 

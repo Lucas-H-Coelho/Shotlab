@@ -16,6 +16,8 @@ import {
   Eye,
   Layers,
   Sparkles,
+  Triangle,
+  Aperture,
 } from 'lucide-react';
 
 interface ViewfinderHUDProps {
@@ -37,6 +39,8 @@ export const ViewfinderHUD: React.FC<ViewfinderHUDProps> = ({ getThreeContext })
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [isExporting, setIsExporting] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [showHarmonicTriangles, setShowHarmonicTriangles] = useState(false);
+  const [showVignette, setShowVignette] = useState(true);
 
   // Monitor container resize to calculate frame bounding box
   useEffect(() => {
@@ -64,6 +68,13 @@ export const ViewfinderHUD: React.FC<ViewfinderHUDProps> = ({ getThreeContext })
   const nearLimitM = dof.nearLimitM.toFixed(2);
   const farLimitM = dof.isHyperfocal || !Number.isFinite(dof.farLimitM) ? '∞' : dof.farLimitM.toFixed(2);
   const totalDofM = dof.isHyperfocal || !Number.isFinite(dof.totalDofM) ? '∞' : `${dof.totalDofM.toFixed(2)}m`;
+
+  // Exposure telemetry: EV100 = log2(N^2 / t) - log2(ISO / 100) (default 1/250s @ ISO 100)
+  const shutterSpeedS = 1 / 250;
+  const iso = 100;
+  const apertureN = camera.fStop || 2.8;
+  const ev100 = (Math.log2((apertureN * apertureN) / shutterSpeedS) - Math.log2(iso / 100)).toFixed(1);
+  const apertureBlades = 9; // Diaphragm blades in pro cinema primes
 
   // Compute Active Frame Rectangle based on Aspect Ratio
   const targetAspect = camera.aspectRatio || 1.5;
@@ -198,7 +209,22 @@ export const ViewfinderHUD: React.FC<ViewfinderHUDProps> = ({ getThreeContext })
         </svg>
       )}
 
-      {/* 2. Composition Guides (Inside the Active Frame) */}
+      {/* 2. Natural cos⁴θ Optical Vignette Overlay (In Camera View) */}
+      {isCameraView && showVignette && containerSize.width > 0 && (
+        <div
+          className="absolute pointer-events-none transition-opacity duration-300"
+          style={{
+            left: `${frameLeft}px`,
+            top: `${frameTop}px`,
+            width: `${frameWidth}px`,
+            height: `${frameHeight}px`,
+            background: 'radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.42) 100%)',
+            zIndex: 5,
+          }}
+        />
+      )}
+
+      {/* 3. Composition Guides (Inside the Active Frame) */}
       {isCameraView && containerSize.width > 0 && (
         <div
           className="absolute pointer-events-none"
@@ -219,8 +245,8 @@ export const ViewfinderHUD: React.FC<ViewfinderHUDProps> = ({ getThreeContext })
               <div className="border-r border-b border-optic/35" />
               <div className="border-r border-b border-optic/35" />
               <div className="border-b border-optic/35" />
-              <div className="border-r border-optic/35" />
-              <div className="border-r border-optic/35" />
+              <div className="border-r border-b border-optic/35" />
+              <div className="border-r border-b border-optic/35" />
               <div />
             </div>
           )}
@@ -233,6 +259,48 @@ export const ViewfinderHUD: React.FC<ViewfinderHUDProps> = ({ getThreeContext })
               <div className="absolute left-[38.2%] top-0 bottom-0 border-l border-optic/30 border-dashed" />
               <div className="absolute left-[61.8%] top-0 bottom-0 border-l border-optic/30 border-dashed" />
             </div>
+          )}
+
+          {/* Harmonic Triangles / Golden Triangles (Blender drawviewborder_triangle) */}
+          {showHarmonicTriangles && (
+            <svg
+              className="absolute inset-0 w-full h-full pointer-events-none"
+              style={{ zIndex: 7 }}
+            >
+              {/* Main Diagonal: bottom-left to top-right */}
+              <line
+                x1={0}
+                y1={frameHeight}
+                x2={frameWidth}
+                y2={0}
+                stroke="var(--accent-optic)"
+                strokeWidth="1"
+                strokeDasharray="4 4"
+                opacity="0.55"
+              />
+              {/* Perpendicular from top-left (0, 0) */}
+              <line
+                x1={0}
+                y1={0}
+                x2={(frameWidth * frameHeight * frameHeight) / (frameWidth * frameWidth + frameHeight * frameHeight)}
+                y2={(frameHeight * frameWidth * frameWidth) / (frameWidth * frameWidth + frameHeight * frameHeight)}
+                stroke="var(--accent-optic)"
+                strokeWidth="1"
+                strokeDasharray="4 4"
+                opacity="0.55"
+              />
+              {/* Perpendicular from bottom-right (W, H) */}
+              <line
+                x1={frameWidth}
+                y1={frameHeight}
+                x2={(frameWidth * frameWidth * frameWidth) / (frameWidth * frameWidth + frameHeight * frameHeight)}
+                y2={(frameHeight * frameHeight * frameHeight) / (frameWidth * frameWidth + frameHeight * frameHeight)}
+                stroke="var(--accent-optic)"
+                strokeWidth="1"
+                strokeDasharray="4 4"
+                opacity="0.55"
+              />
+            </svg>
           )}
 
           {/* Center Crosshair */}
@@ -248,7 +316,7 @@ export const ViewfinderHUD: React.FC<ViewfinderHUDProps> = ({ getThreeContext })
         </div>
       )}
 
-      {/* 3. Viewfinder Technical HUD Readouts */}
+      {/* 4. Viewfinder Technical HUD Readouts */}
       {viewfinder.showHud && (
         <div className="absolute inset-0 p-3 flex flex-col justify-between pointer-events-none z-10 text-[10px] tabular-nums">
           {/* Top Bar Telemetry */}
@@ -263,12 +331,16 @@ export const ViewfinderHUD: React.FC<ViewfinderHUDProps> = ({ getThreeContext })
                   f/{camera.fStop}
                 </span>
                 <span className="text-secondary-text">•</span>
+                <span className="text-optic font-semibold">
+                  EV {ev100}
+                </span>
+                <span className="text-secondary-text">•</span>
                 <span className="text-muted-text uppercase">
                   {camera.sensorWidthMm}x{camera.sensorHeightMm}mm
                 </span>
               </div>
-              <div className="text-[9px] text-muted-text px-1">
-                <span>V-FOV {vFov}°</span> • <span>H-FOV {hFov}°</span>
+              <div className="text-[9px] text-muted-text px-1 flex items-center space-x-2">
+                <span>V-FOV {vFov}°</span> • <span>H-FOV {hFov}°</span> • <span>1/250s @ ISO {iso}</span> • <span>{apertureBlades} Blades</span>
               </div>
             </div>
 
@@ -301,8 +373,8 @@ export const ViewfinderHUD: React.FC<ViewfinderHUDProps> = ({ getThreeContext })
                 <span className="text-optic font-semibold">{nearLimitM}m – {farLimitM}m</span>
                 <span className="text-muted-text text-[9px]">({totalDofM})</span>
               </div>
-              <div className="text-[9px] text-muted-text">
-                <span>Hyperfocal: {hyperfocalM}m</span> • <span>CoC: {cocMm.toFixed(4)}mm</span> • <span>Height: {camera.position[1].toFixed(2)}m</span>
+              <div className="text-[9px] text-muted-text flex items-center space-x-1.5">
+                <span>Hyperfocal: {hyperfocalM}m</span> • <span>CoC: {cocMm.toFixed(4)}mm</span> • <span>Height: {camera.position[1].toFixed(2)}m</span> • <span className="text-optic">EV {ev100} (1/250s)</span>
               </div>
             </div>
 
@@ -323,6 +395,21 @@ export const ViewfinderHUD: React.FC<ViewfinderHUDProps> = ({ getThreeContext })
                 </button>
               )}
 
+              {/* Natural Vignette Toggle */}
+              {isCameraView && (
+                <button
+                  onClick={() => setShowVignette(!showVignette)}
+                  title="Toggle Natural cos⁴θ Optical Vignette"
+                  className={`px-1.5 py-1 rounded-sm text-[9px] font-semibold transition-colors ${
+                    showVignette
+                      ? 'bg-optic/20 text-optic border border-optic/60'
+                      : 'text-secondary-text hover:text-primary-text hover:bg-elevated'
+                  }`}
+                >
+                  <Aperture className="w-3 h-3" />
+                </button>
+              )}
+
               {/* Rule of Thirds Toggle */}
               <button
                 onClick={() => updateViewfinder({ showRuleOfThirds: !viewfinder.showRuleOfThirds })}
@@ -334,6 +421,19 @@ export const ViewfinderHUD: React.FC<ViewfinderHUDProps> = ({ getThreeContext })
                 }`}
               >
                 <Grid className="w-3 h-3" />
+              </button>
+
+              {/* Harmonic Triangles Toggle */}
+              <button
+                onClick={() => setShowHarmonicTriangles(!showHarmonicTriangles)}
+                title="Toggle Harmonic Triangles (Blender Golden Triangles)"
+                className={`px-1.5 py-1 rounded-sm text-[9px] font-semibold transition-colors ${
+                  showHarmonicTriangles
+                    ? 'bg-optic/20 text-optic border border-optic/60'
+                    : 'text-secondary-text hover:text-primary-text hover:bg-elevated'
+                }`}
+              >
+                <Triangle className="w-3 h-3" />
               </button>
 
               {/* Center Cross Toggle */}
