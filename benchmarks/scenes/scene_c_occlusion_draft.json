@@ -1,0 +1,39 @@
+{
+  "width": 1024,
+  "height": 1024,
+  "bbox_coord_space": "abs",
+  "bbox_format": "xyxy",
+  "summary": {
+    "meta": [
+      "architectural photography",
+      "cinematic depth",
+      "foreground occlusion"
+    ],
+    "canvas": "single",
+    "caption": "A cinematic architectural studio scene featuring dramatic multi-plane depth with deep foreground occlusion. Photographed on an ultra-wide 24mm cinema lens stopped down to f/4.0 aperture, with critical focus locked at 1.8m on a central sculptural lounge chair. An out-of-focus brutalist fluted pillar slices into the left foreground creating organic occlusion and layered depth."
+  },
+  "items": [
+    {
+      "label": "object",
+      "caption": "A textured concrete architectural column in the extreme foreground, heavily blurred and creating partial occlusion on the left side of the frame.",
+      "bbox": [0, 128, 320, 960]
+    },
+    {
+      "label": "object",
+      "caption": "A razor-sharp mid-century modern lounge chair crafted in cognac leather with a brushed chrome frame, placed in perfect focus at 1.8 meters.",
+      "bbox": [256, 256, 768, 896]
+    },
+    {
+      "label": "text",
+      "caption": "Crisp backlit architectural exhibition title in polished white typography along the upper background wall.",
+      "text": "DESIGN ARCHIVE",
+      "bbox": [384, 96, 928, 208]
+    },
+    {
+      "label": "text",
+      "caption": "Small technical gallery index text cleanly lettered in the lower right zone.",
+      "text": "ZONE 01 // EXHIBIT",
+      "bbox": [736, 848, 960, 912]
+    }
+  ]
+}

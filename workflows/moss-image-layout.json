@@ -1,0 +1,162 @@
+{
+  "1": {
+    "inputs": {
+      "model_path": "/home/rukashi/Documentos/ComfyUI_windows_portable/ComfyUI/models/moss-image-sft",
+      "weight_dtype": "default"
+    },
+    "class_type": "MOSSImageHFDiTLoader",
+    "_meta": {
+      "title": "MOSS-Image-SFT DiT (BF16)"
+    }
+  },
+  "2": {
+    "inputs": {
+      "clip_name": "qwen3.5_9b_int8_convrot.safetensors",
+      "device": "cpu"
+    },
+    "class_type": "MOSSImageCLIPLoader",
+    "_meta": {
+      "title": "Qwen3.5-9B Text Encoder (INT8)"
+    }
+  },
+  "3": {
+    "inputs": {
+      "vae_name": "flux2-vae_small.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Flux2 VAE"
+    }
+  },
+  "4": {
+    "inputs": {
+      "shift": 5.0,
+      "model": [
+        "1",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "Flow Matching Shift (5.0)"
+    }
+  },
+  "5": {
+    "inputs": {
+      "double_layers": "",
+      "single_layers": "22",
+      "start_percent": 0.0,
+      "end_percent": 1.0,
+      "model": [
+        "4",
+        0
+      ]
+    },
+    "class_type": "SkipLayerGuidanceDiTSimple",
+    "_meta": {
+      "title": "SLG Uncond Skip (Layer 22)"
+    }
+  },
+  "6": {
+    "inputs": {
+      "text": "{\"summary\":{\"meta\":[\"commercial product photography\",\"luxury cosmetic\",\"studio lighting\"],\"canvas\":\"single\",\"caption\":\"A high-end commercial studio product shot of a luxury glass perfume bottle standing on a polished dark marble countertop. Photographed on an 85mm portrait telephoto lens at f/1.8 aperture with critical focus locked at 2.2m on the brass sprayer nozzle. Creamy circular background bokeh with delicate warm caustic reflections and clean studio contact shadows.\"},\"items\":[{\"label\":\"text\",\"caption\":\"Large refined serif brand title in metallic champagne gold lettering centered at the top.\",\"text\":\"AURA BOTANICA\",\"bbox\":[-416,-256,-304,256]},{\"label\":\"text\",\"caption\":\"Small uppercase tracking subtitle centered directly underneath the main title.\",\"text\":\"EXTRAIT DE PARFUM\",\"bbox\":[-304,-192,-256,192]},{\"label\":\"object\",\"caption\":\"A heavy dark polished marble countertop slab with subtle white veining and soft reflective surface.\",\"bbox\":[96,-416,464,416]},{\"label\":\"object\",\"caption\":\"An exquisite cylindrical fluted glass perfume bottle filled with amber fragrance liquid, featuring a brushed brass collar and magnetic cap, casting gentle caustics on the stone surface.\",\"bbox\":[-240,-128,240,128]}],\"bbox_coord_space\":\"abs_centralized\",\"bbox_format\":\"yxyx\"}",
+      "clip": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Layout Positive Prompt (abs_centralized JSON)",
+      "parameter_placeholders": {
+        "layout_json": "{{MOSS_LAYOUT_JSON}}"
+      }
+    }
+  },
+  "7": {
+    "inputs": {
+      "text": "nsfw, worst quality, bad anatomy, watermark, jpeg artifact, blurry, oversaturated",
+      "clip": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Negative Prompt",
+      "parameter_placeholders": {
+        "negative_prompt": "{{NEGATIVE_PROMPT}}"
+      }
+    }
+  },
+  "8": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptyFlux2LatentImage",
+    "_meta": {
+      "title": "Empty Flux2 Latent (1024x1024)"
+    }
+  },
+  "9": {
+    "inputs": {
+      "seed": 42,
+      "steps": 50,
+      "cfg": 3.0,
+      "sampler_name": "euler",
+      "scheduler": "sgm_uniform",
+      "denoise": 1.0,
+      "model": [
+        "5",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler (MOSS Inference: 50 Steps, CFG 3.0)"
+    }
+  },
+  "10": {
+    "inputs": {
+      "samples": [
+        "9",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode (Flux2)"
+    }
+  },
+  "11": {
+    "inputs": {
+      "filename_prefix": "Shotlab_MOSS_Layout",
+      "images": [
+        "10",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Rendered Image"
+    }
+  }
+}
