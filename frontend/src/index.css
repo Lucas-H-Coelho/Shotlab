@@ -2,28 +2,83 @@
 @tailwind components;
 @tailwind utilities;
 
+:root,
+[data-theme="dark"] {
+  /* Vantablack & Machined Gunmetal (Dark Theme - Default) */
+  --bg-void: oklch(0.08 0.002 260);              /* ~#050506 - Absoluto, absorção de reflexo */
+  --bg-chassis: oklch(0.125 0.004 260);          /* ~#08090b - Alumínio Anodizado Preto */
+  --bg-surface: oklch(0.165 0.006 260);          /* ~#0e1014 - Painéis Gunmetal */
+  --bg-elevated: oklch(0.215 0.008 260);         /* ~#171a20 - Controles e seletores */
+  --bg-interactive-hover: oklch(0.26 0.010 260); /* ~#21252d - Hover metálico */
+
+  --border-hairline: oklch(0.25 0.008 260);      /* ~#1e2229 - Chanfro fino CNC */
+  --border-specular: oklch(0.36 0.012 260);      /* ~#383e4a - Borda destacada */
+
+  --text-primary: oklch(0.94 0.004 260);         /* ~#eaecef - Gravação a laser prata */
+  --text-secondary: oklch(0.68 0.008 260);       /* ~#969ba4 - Pewter metálico */
+  --text-muted: oklch(0.48 0.008 260);           /* ~#5c616b - Unidades mm, m, ° */
+
+  --accent-optic: oklch(0.78 0.145 75);          /* ~#ebb32d - Cine Amber / Leica Gold */
+  --accent-optic-muted: oklch(0.78 0.145 75 / 0.16);
+  --accent-tally: oklch(0.63 0.22 28);           /* ~#ec4028 - Tally Red-Orange */
+  --status-ok: oklch(0.72 0.15 155);             /* ~#28ba70 - LED Verde Telemetria */
+
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  /* Daylight Studio & Brushed Silver (Light Theme) */
+  --bg-void: oklch(0.90 0.004 260);              /* ~#dedfe2 - Cartão Cinza 18% */
+  --bg-chassis: oklch(0.945 0.003 260);          /* ~#eceeef - Alumínio Prata Anodizado */
+  --bg-surface: oklch(0.975 0.002 260);          /* ~#f6f7f8 - Painéis claros */
+  --bg-elevated: oklch(1.00 0 0);                /* #ffffff - Controles brancos elevados */
+  --bg-interactive-hover: oklch(0.92 0.005 260); /* ~#e3e5e8 */
+
+  --border-hairline: oklch(0.85 0.006 260);      /* ~#cfd2d7 */
+  --border-specular: oklch(0.72 0.010 260);      /* ~#a5aab3 */
+
+  --text-primary: oklch(0.16 0.005 260);         /* ~#0d0f12 - Carbono profundo */
+  --text-secondary: oklch(0.42 0.008 260);       /* ~#4a4e57 */
+  --text-muted: oklch(0.58 0.008 260);           /* ~#787d87 */
+
+  --accent-optic: oklch(0.52 0.14 65);           /* ~#996200 - Bronze usinado APCA */
+  --accent-optic-muted: oklch(0.52 0.14 65 / 0.14);
+  --accent-tally: oklch(0.55 0.21 28);           /* ~#c92a14 */
+  --status-ok: oklch(0.65 0.15 155);             /* ~#1f9b5a */
+
+  color-scheme: light;
+}
+
 html, body, #root {
   height: 100%;
   width: 100%;
   margin: 0;
   padding: 0;
-  background-color: #0b0d11;
-  color: #e2e8f0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-chassis);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  user-select: none;
+  overflow: hidden;
 }
 
-/* Custom scrollbars */
+/* Numeric precision for optical and 3D data */
+.font-mono,
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Custom scrollbars matching theme */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #11141b;
+  background: var(--bg-chassis);
 }
 ::-webkit-scrollbar-thumb {
-  background: #272f3d;
-  border-radius: 3px;
+  background: var(--border-hairline);
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3b465a;
+  background: var(--border-specular);
 }

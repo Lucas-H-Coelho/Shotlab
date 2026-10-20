@@ -6,11 +6,13 @@ import {
   Camera,
   Eye,
   Grid,
+  Sun,
+  Moon,
   Sparkles,
   Server,
-  Layers,
 } from 'lucide-react';
 import { useStudioStore } from '../../store/useStudioStore';
+import { useThemeStore } from '../../store/useThemeStore';
 import { TransformMode } from '../../types/scene';
 
 interface TopBarProps {
@@ -28,6 +30,8 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenRenderModal }) => {
   const comfyUrl = useStudioStore((state) => state.comfyUrl);
   const isRendering = useStudioStore((state) => state.isRendering);
 
+  const { theme, toggleTheme } = useThemeStore();
+
   const transformTools: { mode: TransformMode; icon: any; label: string; shortcut: string }[] = [
     { mode: 'translate', icon: Move, label: 'Mover', shortcut: 'W' },
     { mode: 'rotate', icon: RotateCw, label: 'Girar', shortcut: 'E' },
@@ -35,29 +39,32 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenRenderModal }) => {
   ];
 
   return (
-    <header className="h-14 bg-[#11141c] border-b border-[#212634] px-4 flex items-center justify-between z-20">
-      {/* Brand & Scene Info */}
+    <header className="h-12 bg-chassis border-b border-hairline px-3 flex items-center justify-between z-20">
+      {/* Brand & Project Info */}
       <div className="flex items-center space-x-3">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
-            <Layers className="w-4 h-4 text-white" />
+          {/* CNC Machined Logo Tag */}
+          <div className="w-7 h-7 rounded-sm bg-elevated border border-hairline flex items-center justify-center shadow-inner">
+            <span className="font-mono font-bold text-xs text-optic tracking-tighter">SL</span>
           </div>
           <div>
-            <div className="text-sm font-bold tracking-tight text-white flex items-center space-x-1.5">
-              <span>SHOTLAB</span>
-              <span className="text-[10px] uppercase px-1.5 py-0.2 rounded bg-sky-950 text-sky-400 font-mono border border-sky-800/50">
-                Studio 3D + IA
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-bold tracking-wider text-primary-text uppercase">
+                Shotlab
+              </span>
+              <span className="text-[9px] uppercase px-1 py-0.5 rounded-sm bg-elevated border border-hairline text-secondary-text font-mono tabular-nums">
+                Studio 3D • Optical
               </span>
             </div>
-            <p className="text-[11px] text-gray-400">{sceneName}</p>
+            <p className="text-[10px] text-muted-text truncate max-w-[180px]">{sceneName}</p>
           </div>
         </div>
       </div>
 
-      {/* Center: Transform & View Controls */}
+      {/* Center: Transform & Viewport Mode Selectors */}
       <div className="flex items-center space-x-2">
-        {/* Transform Gizmo Selector */}
-        <div className="flex items-center bg-[#171b26] p-1 rounded-lg border border-[#262c3e]">
+        {/* Transform Tools (Translate / Rotate / Scale) */}
+        <div className="flex items-center bg-surface p-0.5 rounded-sm border border-hairline">
           {transformTools.map((tool) => {
             const Icon = tool.icon;
             const active = transformMode === tool.mode;
@@ -66,29 +73,30 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenRenderModal }) => {
                 key={tool.mode}
                 onClick={() => setTransformMode(tool.mode)}
                 title={`${tool.label} (${tool.shortcut})`}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-sm text-xs font-medium transition-colors ${
                   active
-                    ? 'bg-sky-600 text-white shadow-sm'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-slate-800/60'
+                    ? 'bg-elevated text-optic border border-specular shadow-sm'
+                    : 'text-secondary-text hover:text-primary-text hover:bg-elevated/50'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
                 <span>{tool.label}</span>
+                <span className="text-[9px] opacity-60 font-mono tabular-nums">[{tool.shortcut}]</span>
               </button>
             );
           })}
         </div>
 
-        <div className="h-5 w-px bg-[#262c3e] mx-1" />
+        <div className="h-4 w-px bg-hairline mx-1" />
 
-        {/* View Mode (Editor vs Real Camera) */}
-        <div className="flex items-center bg-[#171b26] p-1 rounded-lg border border-[#262c3e]">
+        {/* View Mode (Free Orbit vs Virtual Camera) */}
+        <div className="flex items-center bg-surface p-0.5 rounded-sm border border-hairline">
           <button
             onClick={() => setActiveView('editor')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+            className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-sm text-xs font-medium transition-colors ${
               activeView === 'editor'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-slate-800/60'
+                ? 'bg-elevated text-primary-text border border-specular shadow-sm'
+                : 'text-secondary-text hover:text-primary-text hover:bg-elevated/50'
             }`}
           >
             <Eye className="w-3.5 h-3.5" />
@@ -96,45 +104,65 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenRenderModal }) => {
           </button>
           <button
             onClick={() => setActiveView('camera')}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+            className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-sm text-xs font-medium transition-colors ${
               activeView === 'camera'
-                ? 'bg-rose-600 text-white shadow-sm'
-                : 'text-gray-400 hover:text-gray-200 hover:bg-slate-800/60'
+                ? 'bg-optic text-chassis font-semibold border border-optic shadow-sm'
+                : 'text-secondary-text hover:text-primary-text hover:bg-elevated/50'
             }`}
           >
             <Camera className="w-3.5 h-3.5" />
-            <span>Câmera Virtual</span>
+            <span>Visor Óptico</span>
           </button>
         </div>
 
         {/* Grid Snap Toggle */}
         <button
           onClick={() => setSnapToGrid(!snapToGrid)}
-          title="Ajuste ao Grid (Snap 10cm)"
-          className={`p-2 rounded-lg border text-xs transition-colors ${
+          title="Ajuste ao Piso e Grid Métrico (10cm)"
+          className={`p-1.5 rounded-sm border text-xs transition-colors ${
             snapToGrid
-              ? 'bg-sky-950/70 border-sky-600 text-sky-400'
-              : 'bg-[#171b26] border-[#262c3e] text-gray-400 hover:text-gray-200'
+              ? 'bg-optic/15 border-optic text-optic'
+              : 'bg-surface border-hairline text-secondary-text hover:text-primary-text hover:bg-elevated'
           }`}
         >
-          <Grid className="w-4 h-4" />
+          <Grid className="w-3.5 h-3.5" />
         </button>
       </div>
 
-      {/* Right: ComfyUI Status & Generate Action */}
-      <div className="flex items-center space-x-3">
-        <div className="flex items-center space-x-2 text-xs text-gray-400 bg-[#171b26] px-2.5 py-1.5 rounded-lg border border-[#262c3e]">
-          <Server className="w-3.5 h-3.5 text-emerald-400" />
-          <span className="font-mono text-[11px] truncate max-w-[140px]">{comfyUrl}</span>
+      {/* Right: Theme Switcher, ComfyUI Telemetry & Render Action */}
+      <div className="flex items-center space-x-2">
+        {/* Dark / Light Mode Switcher */}
+        <button
+          onClick={toggleTheme}
+          title={theme === 'dark' ? 'Alternar para Modo Diurno (Brushed Silver)' : 'Alternar para Modo Vantablack'}
+          className="p-1.5 rounded-sm bg-surface border border-hairline text-secondary-text hover:text-primary-text hover:bg-elevated transition-colors"
+        >
+          {theme === 'dark' ? (
+            <Sun className="w-3.5 h-3.5 text-optic" />
+          ) : (
+            <Moon className="w-3.5 h-3.5 text-secondary-text" />
+          )}
+        </button>
+
+        {/* ComfyUI Server Telemetry Badge */}
+        <div className="flex items-center space-x-2 text-xs bg-surface px-2 py-1 rounded-sm border border-hairline">
+          <div className="w-1.5 h-1.5 rounded-full bg-status-ok animate-pulse" />
+          <Server className="w-3 h-3 text-secondary-text" />
+          <span className="font-mono text-[10px] text-secondary-text truncate max-w-[120px] tabular-nums">
+            {comfyUrl.replace('http://', '')}
+          </span>
         </div>
 
+        {/* Render Action Button (Tally Style) */}
         <button
           onClick={onOpenRenderModal}
           disabled={isRendering}
-          className="flex items-center space-x-2 px-4 py-1.5 rounded-lg font-medium text-xs text-white bg-gradient-to-r from-sky-500 via-indigo-600 to-rose-500 hover:from-sky-400 hover:to-rose-400 shadow-md shadow-indigo-600/20 active:scale-95 transition-all disabled:opacity-50"
+          className="flex items-center space-x-1.5 px-3 py-1 rounded-sm text-xs font-semibold tracking-wide text-white bg-tally hover:opacity-90 active:scale-95 transition-all shadow-sm disabled:opacity-50 border border-tally"
         >
-          <Sparkles className="w-4 h-4 animate-pulse" />
-          <span>{isRendering ? 'Gerando...' : 'Gerar Foto IA'}</span>
+          <Sparkles className="w-3.5 h-3.5" />
+          <span className="uppercase text-[11px] font-mono tabular-nums">
+            {isRendering ? 'Processando...' : 'Capturar Take'}
+          </span>
         </button>
       </div>
     </header>

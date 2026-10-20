@@ -32,36 +32,36 @@ export const ObjectPanel: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col h-full text-xs text-gray-300 divide-y divide-[#212634]">
+    <div className="flex flex-col h-full text-xs text-secondary-text divide-y divide-hairline">
       {/* Add Object Actions */}
-      <div className="p-4 space-y-2.5">
-        <div className="flex items-center space-x-1.5 text-xs text-gray-400 font-semibold uppercase tracking-wider">
-          <Plus className="w-3.5 h-3.5 text-sky-400" />
-          <span>Formas Paramétricas</span>
+      <div className="p-3.5 space-y-2">
+        <div className="flex items-center space-x-1.5 text-[10px] text-muted-text font-mono font-semibold uppercase tracking-wider">
+          <Plus className="w-3 h-3 text-optic" />
+          <span>Primitivas Paramétricas</span>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-1.5">
           {addOptions.map((opt) => {
             const Icon = opt.icon;
             return (
               <button
                 key={opt.type}
                 onClick={() => addObject(opt.type)}
-                className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-[#161a25] border border-[#252b3b] hover:border-sky-500/50 hover:bg-[#1d2332] text-gray-200 transition-colors"
+                className="flex items-center space-x-2 px-2.5 py-1.5 rounded-sm bg-elevated border border-hairline hover:border-optic/50 hover:bg-interactive-hover text-primary-text transition-colors"
               >
-                <Icon className="w-3.5 h-3.5 text-sky-400" />
-                <span className="font-medium">{opt.label}</span>
+                <Icon className="w-3.5 h-3.5 text-optic" />
+                <span className="font-medium text-[11px]">{opt.label}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Scene Objects List */}
-      <div className="p-4 space-y-2">
-        <div className="flex justify-between items-center text-xs text-gray-400 font-semibold uppercase tracking-wider">
+      {/* Scene Objects Outliner List */}
+      <div className="p-3.5 space-y-2">
+        <div className="flex justify-between items-center text-[10px] text-muted-text font-mono font-semibold uppercase tracking-wider">
           <div className="flex items-center space-x-1.5">
-            <Package className="w-3.5 h-3.5 text-indigo-400" />
-            <span>Objetos na Cena ({objects.length})</span>
+            <Package className="w-3 h-3 text-optic" />
+            <span>Outliner da Cena ({objects.length})</span>
           </div>
         </div>
 
@@ -72,22 +72,22 @@ export const ObjectPanel: React.FC = () => {
               <div
                 key={obj.id}
                 onClick={() => selectObject(obj.id)}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer border transition-all ${
+                className={`flex items-center justify-between px-2.5 py-1.5 rounded-sm cursor-pointer border transition-all ${
                   isSelected
-                    ? 'bg-sky-950/60 border-sky-500 text-white shadow-sm'
-                    : 'bg-[#141822] border-[#202534] text-gray-300 hover:bg-[#1a202d]'
+                    ? 'bg-elevated border-optic text-primary-text shadow-sm'
+                    : 'bg-surface border-hairline text-secondary-text hover:bg-elevated hover:text-primary-text'
                 }`}
               >
                 <div className="flex items-center space-x-2 truncate">
                   <div
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                    className="w-2 h-2 rounded-full flex-shrink-0"
                     style={{ backgroundColor: obj.material.color }}
                   />
-                  <span className="truncate font-medium">{obj.name}</span>
+                  <span className="truncate font-mono text-[11px]">{obj.name}</span>
                 </div>
 
                 <div className="flex items-center space-x-1">
-                  {obj.locked && <Lock className="w-3 h-3 text-gray-500" />}
+                  {obj.locked && <Lock className="w-3 h-3 text-muted-text" />}
                   {isSelected && !obj.locked && (
                     <div className="flex items-center space-x-1">
                       <button
@@ -96,9 +96,9 @@ export const ObjectPanel: React.FC = () => {
                           duplicateObject(obj.id);
                         }}
                         title="Duplicar"
-                        className="p-1 hover:text-sky-300 transition-colors"
+                        className="p-0.5 text-secondary-text hover:text-optic transition-colors"
                       >
-                        <Copy className="w-3.5 h-3.5" />
+                        <Copy className="w-3 h-3" />
                       </button>
                       <button
                         onClick={(e) => {
@@ -106,9 +106,9 @@ export const ObjectPanel: React.FC = () => {
                           removeObject(obj.id);
                         }}
                         title="Excluir"
-                        className="p-1 hover:text-rose-400 transition-colors"
+                        className="p-0.5 text-secondary-text hover:text-tally transition-colors"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
                   )}
@@ -121,27 +121,27 @@ export const ObjectPanel: React.FC = () => {
 
       {/* Selected Object Inspector */}
       {selectedObject && (
-        <div className="p-4 space-y-4 overflow-y-auto flex-1">
-          <div className="space-y-2">
-            <label className="text-[11px] text-gray-400 block font-semibold uppercase tracking-wider">
-              Identificação
+        <div className="p-3.5 space-y-3.5 overflow-y-auto flex-1">
+          <div className="space-y-1">
+            <label className="text-[10px] text-muted-text block font-mono font-semibold uppercase tracking-wider">
+              Identificador
             </label>
             <input
               type="text"
               value={selectedObject.name}
               onChange={(e) => updateObject(selectedObject.id, { name: e.target.value })}
-              className="w-full bg-[#161a25] border border-[#252b3b] rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:border-sky-500 text-xs"
+              className="w-full bg-elevated border border-hairline rounded-sm px-2 py-1 text-primary-text font-mono text-xs focus:outline-none focus:border-optic"
             />
           </div>
 
           {/* Position (m) */}
-          <div className="space-y-1.5">
-            <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider block">
-              Posição (Metros)
+          <div className="space-y-1">
+            <span className="text-[10px] text-muted-text font-mono font-semibold uppercase tracking-wider block">
+              Posição Métrica (Metros)
             </span>
-            <div className="grid grid-cols-3 gap-2 font-mono">
+            <div className="grid grid-cols-3 gap-1.5 font-mono tabular-nums">
               <div>
-                <span className="text-[10px] text-gray-500 block">X</span>
+                <span className="text-[9px] text-muted-text block uppercase">X</span>
                 <input
                   type="number"
                   step="0.05"
@@ -155,11 +155,11 @@ export const ObjectPanel: React.FC = () => {
                       ],
                     })
                   }
-                  className="w-full bg-[#161a25] border border-[#252b3b] rounded px-2 py-1 text-white text-xs"
+                  className="w-full bg-elevated border border-hairline rounded-sm px-1.5 py-1 text-primary-text text-xs focus:outline-none focus:border-optic"
                 />
               </div>
               <div>
-                <span className="text-[10px] text-gray-500 block">Y (Altura)</span>
+                <span className="text-[9px] text-muted-text block uppercase">Y (Piso)</span>
                 <input
                   type="number"
                   step="0.05"
@@ -173,11 +173,11 @@ export const ObjectPanel: React.FC = () => {
                       ],
                     })
                   }
-                  className="w-full bg-[#161a25] border border-[#252b3b] rounded px-2 py-1 text-white text-xs"
+                  className="w-full bg-elevated border border-hairline rounded-sm px-1.5 py-1 text-primary-text text-xs focus:outline-none focus:border-optic"
                 />
               </div>
               <div>
-                <span className="text-[10px] text-gray-500 block">Z</span>
+                <span className="text-[9px] text-muted-text block uppercase">Z</span>
                 <input
                   type="number"
                   step="0.05"
@@ -191,20 +191,20 @@ export const ObjectPanel: React.FC = () => {
                       ],
                     })
                   }
-                  className="w-full bg-[#161a25] border border-[#252b3b] rounded px-2 py-1 text-white text-xs"
+                  className="w-full bg-elevated border border-hairline rounded-sm px-1.5 py-1 text-primary-text text-xs focus:outline-none focus:border-optic"
                 />
               </div>
             </div>
           </div>
 
           {/* Scale (m) */}
-          <div className="space-y-1.5">
-            <span className="text-[11px] text-gray-400 font-semibold uppercase tracking-wider block">
-              Escala (Metros)
+          <div className="space-y-1">
+            <span className="text-[10px] text-muted-text font-mono font-semibold uppercase tracking-wider block">
+              Dimensões (Metros)
             </span>
-            <div className="grid grid-cols-3 gap-2 font-mono">
+            <div className="grid grid-cols-3 gap-1.5 font-mono tabular-nums">
               <div>
-                <span className="text-[10px] text-gray-500 block">Largura (X)</span>
+                <span className="text-[9px] text-muted-text block uppercase">Largura</span>
                 <input
                   type="number"
                   step="0.05"
@@ -219,11 +219,11 @@ export const ObjectPanel: React.FC = () => {
                       ],
                     })
                   }
-                  className="w-full bg-[#161a25] border border-[#252b3b] rounded px-2 py-1 text-white text-xs"
+                  className="w-full bg-elevated border border-hairline rounded-sm px-1.5 py-1 text-primary-text text-xs focus:outline-none focus:border-optic"
                 />
               </div>
               <div>
-                <span className="text-[10px] text-gray-500 block">Altura (Y)</span>
+                <span className="text-[9px] text-muted-text block uppercase">Altura</span>
                 <input
                   type="number"
                   step="0.05"
@@ -238,11 +238,11 @@ export const ObjectPanel: React.FC = () => {
                       ],
                     })
                   }
-                  className="w-full bg-[#161a25] border border-[#252b3b] rounded px-2 py-1 text-white text-xs"
+                  className="w-full bg-elevated border border-hairline rounded-sm px-1.5 py-1 text-primary-text text-xs focus:outline-none focus:border-optic"
                 />
               </div>
               <div>
-                <span className="text-[10px] text-gray-500 block">Profundidade (Z)</span>
+                <span className="text-[9px] text-muted-text block uppercase">Profund.</span>
                 <input
                   type="number"
                   step="0.05"
@@ -257,20 +257,20 @@ export const ObjectPanel: React.FC = () => {
                       ],
                     })
                   }
-                  className="w-full bg-[#161a25] border border-[#252b3b] rounded px-2 py-1 text-white text-xs"
+                  className="w-full bg-elevated border border-hairline rounded-sm px-1.5 py-1 text-primary-text text-xs focus:outline-none focus:border-optic"
                 />
               </div>
             </div>
           </div>
 
-          {/* Material & Colors */}
-          <div className="space-y-3 pt-2 border-t border-[#212634]">
-            <div className="flex items-center space-x-1.5 text-xs text-gray-300 font-semibold uppercase tracking-wider">
-              <Palette className="w-3.5 h-3.5 text-rose-400" />
-              <span>Material & Cor de Referência</span>
+          {/* Material & Appearance */}
+          <div className="space-y-2.5 pt-2 border-t border-hairline">
+            <div className="flex items-center space-x-1.5 text-[10px] text-primary-text font-mono font-semibold uppercase tracking-wider">
+              <Palette className="w-3 h-3 text-optic" />
+              <span>Material & Superfície</span>
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
               <input
                 type="color"
                 value={selectedObject.material.color}
@@ -279,17 +279,19 @@ export const ObjectPanel: React.FC = () => {
                     material: { ...selectedObject.material, color: e.target.value },
                   })
                 }
-                className="w-9 h-9 rounded cursor-pointer bg-transparent border-0"
+                className="w-7 h-7 rounded-sm cursor-pointer bg-transparent border-0"
               />
-              <span className="font-mono text-xs text-gray-300">{selectedObject.material.color}</span>
+              <span className="font-mono tabular-nums text-xs text-primary-text uppercase">
+                {selectedObject.material.color}
+              </span>
             </div>
 
             {/* Roughness & Metalness */}
-            <div className="space-y-2 text-xs">
+            <div className="space-y-1.5 text-xs">
               <div>
-                <div className="flex justify-between text-gray-400">
+                <div className="flex justify-between text-muted-text text-[10px] font-mono">
                   <span>Rugosidade (Roughness)</span>
-                  <span className="font-mono">{selectedObject.material.roughness.toFixed(2)}</span>
+                  <span className="tabular-nums text-primary-text">{selectedObject.material.roughness.toFixed(2)}</span>
                 </div>
                 <input
                   type="range"
@@ -302,13 +304,13 @@ export const ObjectPanel: React.FC = () => {
                       material: { ...selectedObject.material, roughness: Number(e.target.value) },
                     })
                   }
-                  className="w-full accent-sky-500 bg-slate-800 h-1.5 rounded-lg cursor-pointer"
+                  className="w-full accent-[var(--accent-optic)] bg-elevated h-1 rounded-sm cursor-pointer"
                 />
               </div>
               <div>
-                <div className="flex justify-between text-gray-400">
-                  <span>Metálico (Metalness)</span>
-                  <span className="font-mono">{selectedObject.material.metalness.toFixed(2)}</span>
+                <div className="flex justify-between text-muted-text text-[10px] font-mono">
+                  <span>Metalização (Metalness)</span>
+                  <span className="tabular-nums text-primary-text">{selectedObject.material.metalness.toFixed(2)}</span>
                 </div>
                 <input
                   type="range"
@@ -321,7 +323,7 @@ export const ObjectPanel: React.FC = () => {
                       material: { ...selectedObject.material, metalness: Number(e.target.value) },
                     })
                   }
-                  className="w-full accent-sky-500 bg-slate-800 h-1.5 rounded-lg cursor-pointer"
+                  className="w-full accent-[var(--accent-optic)] bg-elevated h-1 rounded-sm cursor-pointer"
                 />
               </div>
             </div>

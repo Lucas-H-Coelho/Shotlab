@@ -35,6 +35,12 @@ Este documento define as regras fundamentais de desenvolvimento e governança pa
   - Three.js gerenciado através de `@react-three/fiber` e `@react-three/drei`.
   - Gerenciamento de estado leve e desacoplado com `zustand`.
   - Componentes modulares, tipagem estrita (sem `any`).
+  - **Design System Estrito (`DESIGN.md`)**:
+    - Estética **Vantablack & Machined Metal** (OKLCH) no tema Dark e **Daylight Studio & Brushed Silver** no tema Light.
+    - **Proibido "AI Slop"**: Nunca usar azul/roxo genérico (`#3b82f6`, `#6366f1`), gradientes neon ou arredondamentos excessivos (`rounded-2xl`).
+    - Toda telemetria e unidade física (`mm`, `f/`, `m`, `°`, `X/Y/Z`) deve usar fonte monoespaçada com `tabular-nums`.
+  - **Internacionalização (i18n)**:
+    - Suporte nativo a múltiplos idiomas (`pt-BR`, `en-US`, `es-ES`); nenhuma string de UI deve ficar hardcoded.
 
 - **Backend**:
   - Python 3.11+ com FastAPI.

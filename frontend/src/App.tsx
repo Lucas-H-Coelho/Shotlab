@@ -17,10 +17,9 @@ export const App: React.FC = () => {
   const activeView = useStudioStore((state) => state.activeView);
   const selectObject = useStudioStore((state) => state.selectObject);
 
-  // Keyboard shortcuts
+  // Global Keyboard Shortcuts (Industry standard 3D & photo shortcuts)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement).tagName)) {
         return;
       }
@@ -49,58 +48,58 @@ export const App: React.FC = () => {
   }, [activeView, setTransformMode, setActiveView, selectObject]);
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#0c0e14]">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-chassis text-primary-text font-sans">
       {/* Top Header */}
       <TopBar onOpenRenderModal={() => setIsRenderModalOpen(true)} />
 
       {/* Main Studio Area */}
       <div className="flex flex-1 overflow-hidden relative">
         {/* Viewport 3D Canvas */}
-        <main className="flex-1 h-full relative">
+        <main className="flex-1 h-full relative bg-void">
           <Viewport />
         </main>
 
         {/* Right Studio Controls Sidebar */}
-        <aside className="w-80 h-full bg-[#11141c] border-l border-[#212634] flex flex-col z-10 shadow-xl">
+        <aside className="w-80 h-full bg-surface border-l border-hairline flex flex-col z-10 shadow-lg">
           {/* Tab Navigation */}
-          <div className="flex border-b border-[#212634] bg-[#161a25]">
+          <div className="flex border-b border-hairline bg-chassis font-mono text-[10px] uppercase">
             <button
               onClick={() => setActiveTab('camera')}
-              className={`flex-1 flex items-center justify-center space-x-1.5 py-3 text-xs font-semibold border-b-2 transition-all ${
+              className={`flex-1 flex items-center justify-center space-x-1.5 py-2.5 font-semibold border-b-2 transition-all ${
                 activeTab === 'camera'
-                  ? 'border-rose-500 text-rose-400 bg-[#121620]'
-                  : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-[#1a202d]'
+                  ? 'border-optic text-optic bg-surface'
+                  : 'border-transparent text-secondary-text hover:text-primary-text hover:bg-elevated/40'
               }`}
             >
-              <Camera className="w-3.5 h-3.5" />
+              <Camera className="w-3 h-3" />
               <span>Câmera</span>
             </button>
             <button
               onClick={() => setActiveTab('objects')}
-              className={`flex-1 flex items-center justify-center space-x-1.5 py-3 text-xs font-semibold border-b-2 transition-all ${
+              className={`flex-1 flex items-center justify-center space-x-1.5 py-2.5 font-semibold border-b-2 transition-all ${
                 activeTab === 'objects'
-                  ? 'border-sky-500 text-sky-400 bg-[#121620]'
-                  : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-[#1a202d]'
+                  ? 'border-optic text-optic bg-surface'
+                  : 'border-transparent text-secondary-text hover:text-primary-text hover:bg-elevated/40'
               }`}
             >
-              <Package className="w-3.5 h-3.5" />
+              <Package className="w-3 h-3" />
               <span>Objetos</span>
             </button>
             <button
               onClick={() => setActiveTab('lights')}
-              className={`flex-1 flex items-center justify-center space-x-1.5 py-3 text-xs font-semibold border-b-2 transition-all ${
+              className={`flex-1 flex items-center justify-center space-x-1.5 py-2.5 font-semibold border-b-2 transition-all ${
                 activeTab === 'lights'
-                  ? 'border-amber-500 text-amber-400 bg-[#121620]'
-                  : 'border-transparent text-gray-400 hover:text-gray-200 hover:bg-[#1a202d]'
+                  ? 'border-optic text-optic bg-surface'
+                  : 'border-transparent text-secondary-text hover:text-primary-text hover:bg-elevated/40'
               }`}
             >
-              <Sun className="w-3.5 h-3.5" />
+              <Sun className="w-3 h-3" />
               <span>Luzes</span>
             </button>
           </div>
 
           {/* Active Panel Content */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto bg-surface">
             {activeTab === 'camera' && <CameraPanel />}
             {activeTab === 'objects' && <ObjectPanel />}
             {activeTab === 'lights' && <LightingPanel />}
