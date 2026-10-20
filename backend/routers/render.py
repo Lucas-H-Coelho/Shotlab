@@ -3,8 +3,10 @@ import uuid
 import json
 import base64
 from typing import Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Response, Query
 import aiosqlite
+
+from services.export_service import export_job_png, build_shot_metadata
 
 from models.scene import RenderJobRequest, RenderJobResponse, SceneGraphModel
 from db.database import get_db_connection
@@ -264,6 +266,22 @@ async def process_comfyui_render(job_id: str, scene_id: str, request: RenderJobR
         await db.close()
 
 
+@router.post("/render", response_model=RenderJobResponse)
+async def create_render_job_standalone(
+    request: RenderJobRequest,
+    background_tasks: BackgroundTasks,
+    scene_id: Optional[str] = None,
+    db: aiosqlite.Connection = Depends(get_db_connection),
+):
+    target_scene_id = request.scene_id or scene_id or "default"
+    return await create_render_job(
+        scene_id=target_scene_id,
+        request=request,
+        background_tasks=background_tasks,
+        db=db,
+    )
+
+
 @router.post("/scenes/{scene_id}/render", response_model=RenderJobResponse)
 async def create_render_job(
     scene_id: str,
@@ -304,6 +322,7 @@ async def create_render_job(
 
 
 @router.get("/jobs/{job_id}", response_model=RenderJobResponse)
+@router.get("/render/{job_id}", response_model=RenderJobResponse)
 async def get_job_status(job_id: str, db: aiosqlite.Connection = Depends(get_db_connection)):
     try:
         async with db.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)) as cursor:
@@ -327,3 +346,71 @@ async def get_job_status(job_id: str, db: aiosqlite.Connection = Depends(get_db_
             )
     finally:
         await db.close()
+
+
+@router.get("/render/{job_id}/metadata")
+@router.get("/jobs/{job_id}/metadata")
+async def get_render_job_metadata(
+    job_id: str,
+    db: aiosqlite.Connection = Depends(get_db_connection),
+) -> Dict[str, Any]:
+    """Returns structured JSON sidecar manifest containing all optical, spatial, and generative parameters."""
+    try:
+        async with db.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)) as cursor:
+            row = await cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
+
+            job_dict = dict(row)
+            scene_id = job_dict.get("scene_id", "scene-default")
+            scene = await get_scene_model_from_db(db, scene_id)
+
+            return build_shot_metadata(job_row=job_dict, scene=scene, alpha=False)
+    finally:
+        await db.close()
+
+
+@router.get("/render/{job_id}/export")
+@router.get("/jobs/{job_id}/export")
+async def export_render_job(
+    job_id: str,
+    alpha: bool = Query(default=False, description="Whether to include transparency / RGBA alpha channel"),
+    format: str = Query(default="png", description="Export file format ('png')"),
+    db: aiosqlite.Connection = Depends(get_db_connection),
+):
+    """
+    Exports a render job as 2K PNG with embedded tEXt technical metadata chunks.
+    Supports alpha=True (32-bit RGBA) and alpha=False (24-bit RGB).
+    """
+    if format.lower() != "png":
+        raise HTTPException(status_code=400, detail=f"Unsupported format '{format}'. Only 'png' is supported.")
+
+    try:
+        async with db.execute("SELECT * FROM jobs WHERE id = ?", (job_id,)) as cursor:
+            row = await cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail=f"Job '{job_id}' not found")
+
+            job_dict = dict(row)
+            scene_id = job_dict.get("scene_id", "scene-default")
+            scene = await get_scene_model_from_db(db, scene_id)
+
+            png_bytes, metadata = export_job_png(
+                job_row=job_dict,
+                scene=scene,
+                alpha=alpha,
+                format_type=format,
+            )
+
+            return Response(
+                content=png_bytes,
+                media_type="image/png",
+                headers={
+                    "Content-Disposition": f'attachment; filename="shotlab_{job_id}.png"',
+                    "X-Shotlab-Engine": str(metadata.get("engine", "")),
+                    "X-Shotlab-Resolution": str(metadata.get("resolution", "")),
+                },
+            )
+    finally:
+        await db.close()
+
