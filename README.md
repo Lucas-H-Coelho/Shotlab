@@ -58,13 +58,21 @@ O Shotlab é construído sob uma premissa estrita de **API-First**:
 
 ```text
 Shotlab/
+├── .env.example        # Modelo de variáveis de ambiente da raiz
 ├── backend/            # API FastAPI, Scene Graph, SQLite e WebSockets
-│   ├── app/
-│   │   ├── api/        # Rotas versionadas (/v1)
-│   │   ├── core/       # Configurações e conexões
-│   │   ├── models/     # Schemas Pydantic do Scene Graph
-│   │   └── services/   # Cliente ComfyUI e lógica de cena
-│   └── tests/
+│   ├── .env.example    # Modelo de variáveis de ambiente do backend
+│   ├── app/            # Pacote modular da aplicação (uvicorn app.main:app)
+│   │   ├── api/        # Endpoints e rotas versionadas (/v1)
+│   │   ├── core/       # Configurações tipadas (Settings) e CORS seguro
+│   │   ├── db/         # Conexão e inicialização SQLite
+│   │   ├── models/     # Schemas Pydantic do Scene Graph e Câmera Óptica
+│   │   └── services/   # Cliente ComfyUI e validação física
+│   ├── core/           # Módulo core (Settings e re-exports)
+│   ├── db/             # Camada de banco de dados
+│   ├── models/         # Modelos de dados
+│   ├── routers/        # Rotas da API
+│   ├── services/       # Serviços e integrações ComfyUI
+│   └── tests/          # Testes automatizados pytest
 ├── frontend/           # Interface React + TypeScript + Vite + Three.js
 │   ├── src/
 │   │   ├── components/ # Viewport 3D, controles e painéis
@@ -76,6 +84,82 @@ Shotlab/
 ├── cli/                # Interface de linha de comando com Typer
 └── docs/               # Documentação técnica e matemática de lentes
 ```
+
+---
+
+## 🚀 Como Executar e Comandos Principais
+
+### 1. Pré-requisitos
+- **Python**: 3.11 ou superior
+- **Node.js**: 20 ou superior (npm)
+- *(Opcional)*: Instância ComfyUI ativa com Qwen Image 2.1 / MOSS-Image (o estúdio 3D opera perfeitamente em modo offline)
+
+### 2. Configuração de Variáveis de Ambiente
+Copie o arquivo de exemplo para inicializar as variáveis locais:
+```bash
+cp .env.example .env
+cp backend/.env.example backend/.env
+```
+
+| Variável | Padrão | Descrição |
+|---|---|---|
+| `COMFYUI_URL` | `http://localhost:8188` | URL base do servidor ComfyUI |
+| `DATABASE_PATH` | `shotlab.db` | Caminho do banco SQLite de persistência de cenas |
+| `CORS_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173` | Origens seguras permitidas para requisições com credenciais |
+
+### 3. Automação via Makefile
+
+O repositório inclui um `Makefile` com atalhos padronizados para lint, testes e build:
+
+```bash
+# Executa todos os testes (backend pytest + frontend vitest)
+make test
+
+# Executa apenas testes do backend
+make test-backend
+
+# Executa apenas testes do frontend
+make test-frontend
+
+# Executa linters e verificação de tipagem (ruff no backend + tsc no frontend)
+make lint
+
+# Executa apenas o linter do backend
+make lint-backend
+
+# Executa apenas a verificação de tipos do frontend
+make lint-frontend
+
+# Gera o bundle de produção do frontend
+make build
+```
+
+### 4. Execução Manual dos Serviços
+
+#### Backend (FastAPI)
+O backend suporta a inicialização moderna no layout `backend/app/` mantendo 100% de compatibilidade retroativa:
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate  # ou .venv\Scripts\activate no Windows
+pip install -r requirements.txt
+
+# Execução recomendada (layout modular backend/app/):
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Execução compatível retroativa:
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+- **Documentação OpenAPI interativa (Swagger)**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Healthcheck**: [http://localhost:8000/healthz](http://localhost:8000/healthz)
+
+#### Frontend (React + Vite + Three.js)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+- **Interface Web**: [http://localhost:5173](http://localhost:5173)
 
 ---
 

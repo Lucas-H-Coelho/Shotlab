@@ -1,0 +1,30 @@
+[tool.pytest.ini_options]
+pythonpath = ["backend"]
+testpaths = ["backend/tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+]
+ignore = [
+    "E501",  # line length
+    "E402",  # module level import not at top of file
+    "F401",  # unused import
+    "W291",  # trailing whitespace
+    "W293",  # whitespace in blank line
+    "B008",  # do not perform function calls in argument defaults (FastAPI Depends)
+    "B904",  # raise ... from err in except clause
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"

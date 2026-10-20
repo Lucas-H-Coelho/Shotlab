@@ -14,7 +14,8 @@ from typing import Dict, Any, Optional, List, AsyncGenerator, Union
 import httpx
 import websockets
 
-from models.scene import SceneGraphModel, SceneObjectModel, CameraModel
+from core.config import settings
+from models.scene import CameraModel, SceneGraphModel, SceneObjectModel
 
 
 class ComfyUIError(Exception):
@@ -35,7 +36,7 @@ class ComfyUIClient:
     """
 
     def __init__(self, base_url: Optional[str] = None):
-        self.base_url = (base_url or os.environ.get("COMFYUI_URL", "http://localhost:8188")).rstrip("/")
+        self.base_url = (base_url or os.environ.get("COMFYUI_URL", settings.comfyui_url)).rstrip("/")
 
     @property
     def ws_url(self) -> str:
