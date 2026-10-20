@@ -1,401 +1,550 @@
+import os
 import json
-import time
+import uuid
+from typing import Optional, Any
 import typer
-from typing import Optional
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
-from rich import box
 
-from cli.client import ShotlabClient, ShotlabApiError
+from cli.client import (
+    ShotlabClient,
+    DEFAULT_API_URL,
+    set_client_transport,
+    get_client_transport,
+)
 
+# Root Typer Application
 app = typer.Typer(
     name="shotlab",
-    help="Shotlab CLI — Command-line interface for the Shotlab Virtual Photo Studio (API-First)",
+    help="Shotlab CLI — Linha de comando para controle do estúdio 3D, física óptica e renderização ComfyUI.",
     no_args_is_help=True,
 )
 
-scene_app = typer.Typer(name="scene", help="Manage 3D scenes and sessions", no_args_is_help=True)
-object_app = typer.Typer(name="object", help="Manage scene objects (add, move, delete)", no_args_is_help=True)
-camera_app = typer.Typer(name="camera", help="Control optical camera parameters", no_args_is_help=True)
+# Subcommand Groups
+scene_app = typer.Typer(name="scene", help="Gerenciamento de cenas e sessões fotográficas.", no_args_is_help=True)
+object_app = typer.Typer(name="object", help="Manipulação de objetos 3D no estúdio físico.", no_args_is_help=True)
+camera_app = typer.Typer(name="camera", help="Controle óptico e posicionamento da câmera.", no_args_is_help=True)
+optics_app = typer.Typer(name="optics", help="Cálculos de física óptica real (DoF, FoV, CoC).", no_args_is_help=True)
 
-app.add_typer(scene_app)
-app.add_typer(object_app)
-app.add_typer(camera_app)
+app.add_typer(scene_app, name="scene")
+app.add_typer(object_app, name="object")
+app.add_typer(camera_app, name="camera")
+app.add_typer(optics_app, name="optics")
 
 console = Console()
 err_console = Console(stderr=True)
 
-state = {"api_url": "http://localhost:8000", "json": False}
+
+# ---------------- Helpers ----------------
+
+
+def parse_vec3(val: str, field_name: str) -> list[float]:
+    parts = [p.strip() for p in val.split(",") if p.strip()]
+    if len(parts) != 3:
+        err_console.print(
+            f"[bold red]Erro no parâmetro --{field_name}:[/bold red] "
+            f"esperado 3 valores 'X,Y,Z' separados por vírgula, recebido '{val}'"
+        )
+        raise typer.Exit(code=1)
+    try:
+        return [float(p) for p in parts]
+    except ValueError:
+        err_console.print(
+            f"[bold red]Erro no parâmetro --{field_name}:[/bold red] "
+            f"coordenadas devem ser números válidos, recebido '{val}'"
+        )
+        raise typer.Exit(code=1)
+
+
+def resolve_config(
+    ctx: typer.Context,
+    api_url_opt: Optional[str] = None,
+    json_opt: Optional[bool] = None,
+) -> tuple[str, bool]:
+    obj = ctx.obj or {}
+    api_url = api_url_opt or obj.get("api_url") or os.environ.get("SHOTLAB_API_URL", DEFAULT_API_URL)
+    is_json = json_opt if json_opt is not None else obj.get("json_output", False)
+    return api_url, is_json
+
+
+def handle_api_response(response, json_output: bool = False) -> Any:
+    if response.status_code < 400:
+        try:
+            return response.json()
+        except Exception:
+            return {}
+
+    try:
+        data = response.json()
+    except Exception:
+        data = {"detail": response.text}
+
+    status_code = response.status_code
+    detail = data.get("detail", data)
+
+    # Physical validation errors (HTTP 422: FLOOR_PENETRATION, COLLISION_AABB)
+    if status_code == 422 and isinstance(detail, dict) and "code" in detail:
+        code = detail.get("code")
+        explanation = detail.get("detail", "Violação de restrição física na cena")
+        if json_output:
+            typer.echo(
+                json.dumps(
+                    {
+                        "error": code,
+                        "status_code": 422,
+                        "detail": detail,
+                    },
+                    indent=2,
+                ),
+                err=True,
+            )
+        else:
+            err_console.print(f"[bold red]\n[ERRO DE FÍSICA] Código: {code}[/bold red]")
+            err_console.print(f"[bold yellow]Explicação:[/bold yellow] {explanation}")
+            if code == "FLOOR_PENETRATION" and "base_y_meters" in detail:
+                base_y = detail["base_y_meters"]
+                obj_name = detail.get("object_name", detail.get("object_id", ""))
+                err_console.print(
+                    f"[dim]Objeto: '{obj_name}' | Posição base Y: {base_y:.4f}m (mínimo permitido: 0.0000m)[/dim]"
+                )
+            elif code == "COLLISION_AABB":
+                obj_a = detail.get("object_a_name", detail.get("object_a_id", "A"))
+                obj_b = detail.get("object_b_name", detail.get("object_b_id", "B"))
+                err_console.print(f"[dim]Colisão volumétrica detectada entre '{obj_a}' e '{obj_b}' no espaço 3D.[/dim]")
+        raise typer.Exit(code=1)
+
+    # General HTTP errors
+    if json_output:
+        typer.echo(
+            json.dumps(
+                {
+                    "error": "HTTP_ERROR",
+                    "status_code": status_code,
+                    "detail": detail,
+                },
+                indent=2,
+            ),
+            err=True,
+        )
+    else:
+        err_console.print(f"[bold red]Erro na API Shotlab (HTTP {status_code}):[/bold red] {detail}")
+    raise typer.Exit(code=1)
+
 
 @app.callback()
-def main(
-    api: Optional[str] = typer.Option(
-        None,
-        "--api",
-        "-a",
-        help="Shotlab API base URL (default: $SHOTLAB_API or http://localhost:8000)",
+def main_callback(
+    ctx: typer.Context,
+    api_url: str = typer.Option(
+        DEFAULT_API_URL,
+        "--api-url",
+        help="URL base da API Shotlab (padrão: SHOTLAB_API_URL ou http://localhost:8000)",
     ),
     json_output: bool = typer.Option(
         False,
         "--json",
-        "-j",
-        help="Output raw JSON instead of formatted Rich terminal tables",
+        help="Formatar saída estritamente em JSON",
     ),
 ):
-    if api:
-        state["api_url"] = api
-    state["json"] = json_output
+    ctx.ensure_object(dict)
+    ctx.obj["api_url"] = api_url.rstrip("/")
+    ctx.obj["json_output"] = json_output
 
-def get_client() -> ShotlabClient:
-    return ShotlabClient(base_url=state["api_url"])
 
-def output_result(data: any, human_render_fn):
-    if state["json"]:
-        typer.echo(json.dumps(data, indent=2, ensure_ascii=False))
-    else:
-        human_render_fn()
+# ---------------- Scene Commands ----------------
 
-def handle_api_error(err: ShotlabApiError):
-    if state["json"]:
-        err_payload = {
-            "error": {
-                "code": err.error_code or "API_ERROR",
-                "message": err.message,
-                "status_code": err.status_code,
-                "details": err.details,
-            }
-        }
-        err_console.print(json.dumps(err_payload, indent=2, ensure_ascii=False))
-    else:
-        err_console.print(
-            Panel(
-                f"[bold red]Erro ({err.error_code or err.status_code}):[/bold red] {err.message}",
-                title="[bold red]Shotlab API Error[/bold red]",
-                border_style="red",
-                box=box.ROUNDED,
-            )
+
+@scene_app.command("list", help="Lista todas as cenas do estúdio.")
+def scene_list(
+    ctx: typer.Context,
+    api_url: Optional[str] = typer.Option(None, "--api-url", help="URL base da API"),
+    json_output: Optional[bool] = typer.Option(None, "--json", help="Saída em JSON"),
+):
+    url, is_json = resolve_config(ctx, api_url, json_output)
+    client = ShotlabClient(api_url=url)
+    res = client.list_scenes()
+    scenes = handle_api_response(res, is_json)
+
+    if is_json:
+        typer.echo(json.dumps(scenes, indent=2))
+        return
+
+    if not scenes:
+        console.print("[yellow]Nenhuma cena cadastrada no estúdio.[/yellow]")
+        return
+
+    table = Table(title="Sessões e Cenas Fotográficas (Shotlab)")
+    table.add_column("ID", style="cyan", no_wrap=True)
+    table.add_column("Nome da Sessão", style="bold white")
+    table.add_column("Objetos", justify="right", style="green")
+    table.add_column("Câmera Óptica", style="yellow")
+
+    for s in scenes:
+        cam = s.get("camera", {})
+        cam_str = f"{cam.get('focal_length_mm', 85)}mm f/{cam.get('f_stop', 1.8)} @ {cam.get('focus_distance_m', 2.2)}m"
+        table.add_row(
+            s.get("id", ""),
+            s.get("name", "Sem nome"),
+            str(len(s.get("objects", []))),
+            cam_str,
         )
-    raise typer.Exit(code=1)
 
-# ==========================================
-# SCENE COMMANDS
-# ==========================================
+    console.print(table)
 
-@scene_app.command("list", help="List all photographic sessions and scenes")
-def scene_list():
-    client = get_client()
-    try:
-        scenes = client.list_scenes()
-    except ShotlabApiError as e:
-        handle_api_error(e)
 
-    def render():
-        if not scenes:
-            console.print("[dim]Nenhuma cena encontrada.[/dim]")
-            return
-        table = Table(title="Shotlab — Sessões de Cena", box=box.ROUNDED)
-        table.add_column("ID", style="cyan", no_wrap=True)
-        table.add_column("Nome", style="bold white")
-        table.add_column("Objetos", justify="right", style="green")
-        table.add_column("Câmera", style="yellow")
-        for s in scenes:
-            cam = s.get("camera", {})
-            focal = cam.get("focal_length_mm", 50)
-            fstop = cam.get("f_stop", 2.8)
-            table.add_row(
-                s.get("id", ""),
-                s.get("name", ""),
-                str(len(s.get("objects", []))),
-                f"{focal}mm • f/{fstop}",
-            )
-        console.print(table)
-
-    output_result(scenes, render)
-
-@scene_app.command("show", help="Show full scene graph, camera and objects")
+@scene_app.command("show", help="Exibe detalhes completos de uma cena.")
 def scene_show(
-    scene_id: str = typer.Argument(default="scene-default", help="Scene ID")
+    ctx: typer.Context,
+    scene_id: str = typer.Argument(..., help="ID da cena (ex: scene-default)"),
+    api_url: Optional[str] = typer.Option(None, "--api-url", help="URL base da API"),
+    json_output: Optional[bool] = typer.Option(None, "--json", help="Saída em JSON"),
 ):
-    client = get_client()
-    try:
-        scene = client.get_scene(scene_id)
-    except ShotlabApiError as e:
-        handle_api_error(e)
+    url, is_json = resolve_config(ctx, api_url, json_output)
+    client = ShotlabClient(api_url=url)
+    res = client.get_scene(scene_id)
+    scene = handle_api_response(res, is_json)
 
-    def render():
-        cam = scene.get("camera", {})
-        console.print(
-            Panel(
-                f"[bold cyan]ID:[/bold cyan] {scene.get('id')}  |  [bold]Nome:[/bold] {scene.get('name')}\n"
-                f"[bold yellow]Câmera:[/bold yellow] {cam.get('focal_length_mm')}mm  |  f/{cam.get('f_stop')}  |  "
-                f"Foco: {cam.get('focus_distance_m')}m  |  Posição: {cam.get('position')}",
-                title="Sessão Fotográfica",
-                border_style="cyan",
-            )
+    if is_json:
+        typer.echo(json.dumps(scene, indent=2))
+        return
+
+    console.print(
+        Panel(
+            f"[bold cyan]ID:[/bold cyan] {scene.get('id')}\n"
+            f"[bold white]Nome:[/bold white] {scene.get('name')}\n"
+            f"[bold yellow]Interseções Permitidas:[/bold yellow] {scene.get('allow_intersections', False)}",
+            title="[bold green]Cena Fotográfica[/bold green]",
+            expand=False,
         )
+    )
 
-        table = Table(title=f"Objetos da Cena ({len(scene.get('objects', []))})", box=box.SIMPLE)
+    cam = scene.get("camera", {})
+    console.print(
+        f"[bold cyan]Câmera:[/bold cyan] {cam.get('focal_length_mm')}mm | f/{cam.get('f_stop')} | "
+        f"Foco: {cam.get('focus_distance_m')}m | Sensor: {cam.get('sensor_width_mm')}x{cam.get('sensor_height_mm')}mm\n"
+        f"  [dim]Posição: {cam.get('position')}m | Alvo: {cam.get('target')}m[/dim]"
+    )
+
+    objects = scene.get("objects", [])
+    if objects:
+        table = Table(title="Objetos na Cena")
         table.add_column("ID", style="cyan")
-        table.add_column("Nome", style="bold")
-        table.add_column("Tipo", style="green")
-        table.add_column("Posição (X, Y, Z) m", style="yellow")
-        table.add_column("Escala (m)", style="dim")
-        table.add_column("Cor", style="magenta")
+        table.add_column("Nome", style="bold white")
+        table.add_column("Tipo", style="magenta")
+        table.add_column("Posição [X,Y,Z] (m)", style="green")
+        table.add_column("Escala [X,Y,Z] (m)", style="yellow")
+        table.add_column("Visível", justify="center")
 
-        for o in scene.get("objects", []):
-            pos = o.get("position", [0, 0, 0])
-            pos_str = f"[{pos[0]:.2f}, {pos[1]:.2f}, {pos[2]:.2f}]"
-            scale = o.get("scale", [1, 1, 1])
-            scale_str = f"[{scale[0]:.2f}, {scale[1]:.2f}, {scale[2]:.2f}]"
-            color = o.get("material", {}).get("color", "#fff")
-            table.add_row(o.get("id"), o.get("name"), o.get("type"), pos_str, scale_str, color)
-
+        for obj in objects:
+            pos = f"[{obj.get('position', [0,0,0])[0]:.2f}, {obj.get('position', [0,0,0])[1]:.2f}, {obj.get('position', [0,0,0])[2]:.2f}]"
+            scale = f"[{obj.get('scale', [1,1,1])[0]:.2f}, {obj.get('scale', [1,1,1])[1]:.2f}, {obj.get('scale', [1,1,1])[2]:.2f}]"
+            table.add_row(
+                obj.get("id", ""),
+                obj.get("name", ""),
+                obj.get("type", ""),
+                pos,
+                scale,
+                "✓" if obj.get("visible", True) else "✗",
+            )
         console.print(table)
 
-    output_result(scene, render)
 
-@scene_app.command("create", help="Create a new photographic scene")
+@scene_app.command("create", help="Cria uma nova cena fotográfica.")
 def scene_create(
-    name: str = typer.Option("Nova Sessão Fotográfica", "--name", "-n", help="Scene name")
+    ctx: typer.Context,
+    name: str = typer.Argument("Nova Sessão Fotográfica", help="Nome da cena"),
+    api_url: Optional[str] = typer.Option(None, "--api-url", help="URL base da API"),
+    json_output: Optional[bool] = typer.Option(None, "--json", help="Saída em JSON"),
 ):
-    client = get_client()
-    try:
-        res = client.create_scene(name=name)
-    except ShotlabApiError as e:
-        handle_api_error(e)
+    url, is_json = resolve_config(ctx, api_url, json_output)
+    client = ShotlabClient(api_url=url)
+    res = client.create_scene(name=name)
+    scene = handle_api_response(res, is_json)
 
-    def render():
-        console.print(f"[bold green]✓ Cena criada com sucesso![/bold green] ID: [cyan]{res.get('id')}[/cyan]")
+    if is_json:
+        typer.echo(json.dumps(scene, indent=2))
+        return
 
-    output_result(res, render)
+    console.print(
+        f"[bold green]✓ Cena criada com sucesso![/bold green] ID: [cyan]{scene.get('id')}[/cyan] | Nome: [bold white]{scene.get('name')}[/bold white]"
+    )
 
-# ==========================================
-# OBJECT COMMANDS
-# ==========================================
 
-@object_app.command("add", help="Add a physical 3D object to the scene")
+# ---------------- Object Commands ----------------
+
+
+@object_app.command("add", help="Adiciona um objeto 3D com validação física (piso e colisões).")
 def object_add(
-    scene_id: str = typer.Argument(..., help="Target scene ID"),
-    obj_type: str = typer.Argument(..., help="Object type: box, cylinder, sphere, table"),
-    name: Optional[str] = typer.Option(None, "--name", "-n", help="Object name"),
-    x: float = typer.Option(0.0, "--x", help="X coordinate in meters"),
-    y: float = typer.Option(0.25, "--y", help="Y elevation in meters (must support floor contact)"),
-    z: float = typer.Option(0.0, "--z", help="Z coordinate in meters"),
-    scale_x: float = typer.Option(0.5, "--scale-x", help="Width in meters"),
-    scale_y: float = typer.Option(0.5, "--scale-y", help="Height in meters"),
-    scale_z: float = typer.Option(0.5, "--scale-z", help="Depth in meters"),
-    color: str = typer.Option("#38bdf8", "--color", help="Material hex color"),
+    ctx: typer.Context,
+    scene_id: str = typer.Argument(..., help="ID da cena"),
+    name: str = typer.Option(..., "--name", "-n", help="Nome do objeto"),
+    type: str = typer.Option("box", "--type", "-t", help="Tipo (box, cylinder, sphere, plane, table, backdrop)"),
+    pos: str = typer.Option("0,0,0", "--pos", help="Posição X,Y,Z em metros (ex: 0,0.5,0)"),
+    scale: str = typer.Option("1,1,1", "--scale", help="Escala X,Y,Z em metros (ex: 1,1,1)"),
+    rot: str = typer.Option("0,0,0", "--rot", help="Rotação Euler Pitch,Yaw,Roll em radianos"),
+    color: str = typer.Option("#94a3b8", "--color", help="Cor hexadecimal do material"),
+    id: Optional[str] = typer.Option(None, "--id", help="ID customizado do objeto"),
+    api_url: Optional[str] = typer.Option(None, "--api-url", help="URL base da API"),
+    json_output: Optional[bool] = typer.Option(None, "--json", help="Saída em JSON"),
 ):
-    client = get_client()
+    url, is_json = resolve_config(ctx, api_url, json_output)
+    pos_vec = parse_vec3(pos, "pos")
+    scale_vec = parse_vec3(scale, "scale")
+    rot_vec = parse_vec3(rot, "rot")
+
+    obj_id = id or f"obj-{uuid.uuid4().hex[:6]}"
     payload = {
-        "id": f"obj-{int(time.time() * 1000) % 1000000}",
-        "name": name or f"{obj_type.capitalize()} 3D",
-        "type": obj_type,
-        "position": [x, y, z],
-        "rotation": [0.0, 0.0, 0.0],
-        "scale": [scale_x, scale_y, scale_z],
-        "material": {"color": color, "roughness": 0.5, "metalness": 0.1},
+        "id": obj_id,
+        "name": name,
+        "type": type,
+        "position": pos_vec,
+        "rotation": rot_vec,
+        "scale": scale_vec,
+        "material": {"color": color},
         "visible": True,
         "locked": False,
     }
 
-    try:
-        res = client.add_object(scene_id, payload)
-    except ShotlabApiError as e:
-        handle_api_error(e)
+    client = ShotlabClient(api_url=url)
+    res = client.add_object(scene_id, payload)
+    added = handle_api_response(res, is_json)
 
-    def render():
-        console.print(f"[bold green]✓ Objeto adicionado com sucesso![/bold green]")
-        console.print(f"ID: [cyan]{res.get('id')}[/cyan] | Nome: {res.get('name')} | Posição: {res.get('position')}")
+    if is_json:
+        typer.echo(json.dumps(added, indent=2))
+        return
 
-    output_result(res, render)
+    console.print(
+        f"[bold green]✓ Objeto adicionado com sucesso![/bold green] "
+        f"ID: [cyan]{added.get('id')}[/cyan] | Nome: [bold white]{added.get('name')}[/bold white] | "
+        f"Pos: {added.get('position')}m | Escala: {added.get('scale')}m"
+    )
 
-@object_app.command("move", help="Move an existing object (patches position)")
+
+@object_app.command("move", help="Move um objeto 3D para nova coordenada com validação física.")
 def object_move(
-    scene_id: str = typer.Argument(..., help="Scene ID"),
-    object_id: str = typer.Argument(..., help="Object ID"),
-    x: float = typer.Option(..., "--x", help="New X in meters"),
-    y: float = typer.Option(..., "--y", help="New Y in meters (floor contact contact >= 0)"),
-    z: float = typer.Option(..., "--z", help="New Z in meters"),
+    ctx: typer.Context,
+    scene_id: str = typer.Argument(..., help="ID da cena"),
+    object_id: str = typer.Argument(..., help="ID do objeto a mover"),
+    pos: str = typer.Option(..., "--pos", help="Nova posição X,Y,Z em metros"),
+    api_url: Optional[str] = typer.Option(None, "--api-url", help="URL base da API"),
+    json_output: Optional[bool] = typer.Option(None, "--json", help="Saída em JSON"),
 ):
-    client = get_client()
-    patch = {"position": [x, y, z]}
-    try:
-        res = client.patch_object(scene_id, object_id, patch)
-    except ShotlabApiError as e:
-        handle_api_error(e)
+    url, is_json = resolve_config(ctx, api_url, json_output)
+    pos_vec = parse_vec3(pos, "pos")
 
-    def render():
-        console.print(f"[bold green]✓ Objeto movido com sucesso![/bold green]")
-        console.print(f"ID: [cyan]{object_id}[/cyan] | Nova Posição: {res.get('position')}")
+    client = ShotlabClient(api_url=url)
+    res = client.move_object(scene_id, object_id, pos_vec)
+    moved = handle_api_response(res, is_json)
 
-    output_result(res, render)
+    if is_json:
+        typer.echo(json.dumps(moved, indent=2))
+        return
 
-@object_app.command("delete", help="Delete an object from the scene")
+    console.print(
+        f"[bold green]✓ Objeto movido com sucesso![/bold green] "
+        f"ID: [cyan]{moved.get('id')}[/cyan] | Nova Posição: [yellow]{moved.get('position')}m[/yellow]"
+    )
+
+
+@object_app.command("delete", help="Remove um objeto de uma cena.")
 def object_delete(
-    scene_id: str = typer.Argument(..., help="Scene ID"),
-    object_id: str = typer.Argument(..., help="Object ID to delete"),
+    ctx: typer.Context,
+    scene_id: str = typer.Argument(..., help="ID da cena"),
+    object_id: str = typer.Argument(..., help="ID do objeto a remover"),
+    api_url: Optional[str] = typer.Option(None, "--api-url", help="URL base da API"),
+    json_output: Optional[bool] = typer.Option(None, "--json", help="Saída em JSON"),
 ):
-    client = get_client()
-    try:
-        res = client.delete_object(scene_id, object_id)
-    except ShotlabApiError as e:
-        handle_api_error(e)
+    url, is_json = resolve_config(ctx, api_url, json_output)
+    client = ShotlabClient(api_url=url)
+    res = client.delete_object(scene_id, object_id)
+    out = handle_api_response(res, is_json)
 
-    def render():
-        console.print(f"[bold green]✓ Objeto '{object_id}' removido da cena {scene_id}![/bold green]")
+    if is_json:
+        typer.echo(json.dumps(out, indent=2))
+        return
 
-    output_result(res, render)
+    console.print(
+        f"[bold green]✓ Objeto removido![/bold green] ID: [cyan]{object_id}[/cyan] da cena [bold white]{scene_id}[/bold white]"
+    )
 
-# ==========================================
-# CAMERA COMMANDS
-# ==========================================
 
-@camera_app.command("set", help="Configure camera lens, aperture, sensor and position")
+# ---------------- Camera Commands ----------------
+
+
+@camera_app.command("set", help="Ajusta os parâmetros fotográficos reais da câmera da cena.")
 def camera_set(
-    scene_id: str = typer.Argument(default="scene-default", help="Scene ID"),
-    focal: Optional[float] = typer.Option(None, "--focal", "-f", help="Focal length in mm (e.g. 24, 35, 50, 85)"),
-    fstop: Optional[float] = typer.Option(None, "--fstop", "-N", help="Lens aperture f-number (e.g. 1.8, 2.8, 8.0)"),
-    focus: Optional[float] = typer.Option(None, "--focus", "-d", help="Focus distance in meters"),
-    sensor_width: Optional[float] = typer.Option(None, "--sensor-width", help="Sensor width in mm (default 36)"),
-    sensor_height: Optional[float] = typer.Option(None, "--sensor-height", help="Sensor height in mm (default 24)"),
-    x: Optional[float] = typer.Option(None, "--x", help="Camera X in meters"),
-    y: Optional[float] = typer.Option(None, "--y", help="Camera elevation Y in meters"),
-    z: Optional[float] = typer.Option(None, "--z", help="Camera distance Z in meters"),
+    ctx: typer.Context,
+    scene_id: str = typer.Argument(..., help="ID da cena"),
+    focal: Optional[float] = typer.Option(None, "--focal", help="Distância focal em milímetros (ex: 85)"),
+    fstop: Optional[float] = typer.Option(None, "--fstop", help="Abertura da lente f-stop (ex: 1.8)"),
+    focus: Optional[float] = typer.Option(None, "--focus", help="Distância de foco em metros (ex: 2.2)"),
+    pos: Optional[str] = typer.Option(None, "--pos", help="Posição 3D da câmera X,Y,Z em metros"),
+    target: Optional[str] = typer.Option(None, "--target", help="Ponto de mira 3D X,Y,Z em metros"),
+    api_url: Optional[str] = typer.Option(None, "--api-url", help="URL base da API"),
+    json_output: Optional[bool] = typer.Option(None, "--json", help="Saída em JSON"),
 ):
-    client = get_client()
-    try:
-        scene = client.get_scene(scene_id)
-        cam = scene.get("camera", {})
+    url, is_json = resolve_config(ctx, api_url, json_output)
+    client = ShotlabClient(api_url=url)
 
-        if focal is not None: cam["focal_length_mm"] = focal
-        if fstop is not None: cam["f_stop"] = fstop
-        if focus is not None: cam["focus_distance_m"] = focus
-        if sensor_width is not None: cam["sensor_width_mm"] = sensor_width
-        if sensor_height is not None: cam["sensor_height_mm"] = sensor_height
+    # 1. Obter câmera existente para preservar campos não especificados
+    scene_res = client.get_scene(scene_id)
+    scene_data = handle_api_response(scene_res, is_json)
+    cam = scene_data.get("camera", {})
 
-        pos = cam.get("position", [0, 1.4, 2.5])
-        if x is not None: pos[0] = x
-        if y is not None: pos[1] = y
-        if z is not None: pos[2] = z
-        cam["position"] = pos
+    if focal is not None:
+        cam["focal_length_mm"] = focal
+    if fstop is not None:
+        cam["f_stop"] = fstop
+    if focus is not None:
+        cam["focus_distance_m"] = focus
+    if pos is not None:
+        cam["position"] = parse_vec3(pos, "pos")
+    if target is not None:
+        cam["target"] = parse_vec3(target, "target")
 
-        res = client.update_camera(scene_id, cam)
-    except ShotlabApiError as e:
-        handle_api_error(e)
+    put_res = client.set_camera(scene_id, cam)
+    updated_cam = handle_api_response(put_res, is_json)
 
-    def render():
-        console.print(f"[bold green]✓ Câmera atualizada com sucesso![/bold green]")
-        console.print(
-            f"Focal: [cyan]{res.get('focal_length_mm')}mm[/cyan] | "
-            f"Abertura: [yellow]f/{res.get('f_stop')}[/yellow] | "
-            f"Foco: [magenta]{res.get('focus_distance_m')}m[/magenta] | "
-            f"Posição: {res.get('position')}"
-        )
+    if is_json:
+        typer.echo(json.dumps(updated_cam, indent=2))
+        return
 
-    output_result(res, render)
+    console.print(
+        f"[bold green]✓ Câmera da cena '{scene_id}' atualizada com sucesso![/bold green]\n"
+        f"  Distância Focal: [yellow]{updated_cam.get('focal_length_mm')} mm[/yellow]\n"
+        f"  Abertura: [yellow]f/{updated_cam.get('f_stop')}[/yellow]\n"
+        f"  Distância de Foco: [yellow]{updated_cam.get('focus_distance_m')} m[/yellow]\n"
+        f"  Posição: {updated_cam.get('position')} m | Alvo: {updated_cam.get('target')} m"
+    )
 
-# ==========================================
-# OPTICS TELEMETRY COMMAND
-# ==========================================
 
-@app.command("optics", help="Inspect optical telemetry (FOV, DoF, Hyperfocal) for a scene")
-def optics_inspect(
-    scene_id: str = typer.Argument(default="scene-default", help="Scene ID to compute optics for")
+# ---------------- Optics Commands ----------------
+
+
+@optics_app.command("compute", help="Calcula a geometria óptica e física de câmera (FoV, CoC, DoF).")
+def optics_compute(
+    ctx: typer.Context,
+    focal: float = typer.Option(50.0, "--focal", help="Distância focal em mm (ex: 85)"),
+    fstop: float = typer.Option(2.8, "--fstop", help="Abertura f-stop (ex: 1.8)"),
+    focus: float = typer.Option(2.5, "--focus", help="Distância de foco em metros (ex: 2.2)"),
+    sensor_width: float = typer.Option(36.0, "--sensor-width", help="Largura do sensor em mm (padrão 35mm FF: 36.0)"),
+    sensor_height: float = typer.Option(24.0, "--sensor-height", help="Altura do sensor em mm (padrão 35mm FF: 24.0)"),
+    api_url: Optional[str] = typer.Option(None, "--api-url", help="URL base da API"),
+    json_output: Optional[bool] = typer.Option(None, "--json", help="Saída em JSON"),
 ):
-    client = get_client()
-    try:
-        optics = client.get_optics(scene_id)
-    except ShotlabApiError as e:
-        handle_api_error(e)
+    url, is_json = resolve_config(ctx, api_url, json_output)
+    payload = {
+        "focal_length_mm": focal,
+        "f_stop": fstop,
+        "focus_distance_m": focus,
+        "sensor_width_mm": sensor_width,
+        "sensor_height_mm": sensor_height,
+    }
 
-    def render():
-        table = Table(title=f"Telemetria Óptica Real — {scene_id}", box=box.ROUNDED)
-        table.add_column("Parâmetro", style="bold cyan")
-        table.add_column("Valor Físico", style="bold white")
-        table.add_column("Unidade", style="dim")
+    client = ShotlabClient(api_url=url)
+    res = client.compute_optics(payload)
+    opt = handle_api_response(res, is_json)
 
-        table.add_row("Distância Focal", str(optics.get("focal_length_mm")), "mm")
-        table.add_row("Abertura (f-stop)", f"f/{optics.get('f_stop')}", "N")
-        table.add_row("Distância de Foco", f"{optics.get('focus_distance_m'):.2f}", "m")
-        table.add_row("Sensor (LxA)", f"{optics.get('sensor_width_mm')} x {optics.get('sensor_height_mm')}", "mm")
-        table.add_row("Círculo de Confusão (CoC)", f"{optics.get('coc_mm'):.4f}", "mm")
-        table.add_row("FOV Vertical", f"{optics.get('vertical_fov_deg'):.2f}", "graus (°)")
-        table.add_row("FOV Horizontal", f"{optics.get('horizontal_fov_deg'):.2f}", "graus (°)")
-        table.add_row("FOV Diagonal", f"{optics.get('diagonal_fov_deg'):.2f}", "graus (°)")
-        table.add_row("Distância Hiperfocal", f"{optics.get('hyperfocal_distance_m'):.2f}", "m")
-        table.add_row("Limite Próximo DoF", f"{optics.get('dof_near_m'):.2f}", "m")
-        far = optics.get("dof_far_m")
-        table.add_row("Limite Distante DoF", f"{far:.2f}" if far is not None else "Infinito (∞)", "m")
-        tot = optics.get("dof_total_m")
-        table.add_row("Extensão Total DoF", f"{tot:.2f}" if tot is not None else "Infinito (∞)", "m")
+    if is_json:
+        typer.echo(json.dumps(opt, indent=2))
+        return
 
-        console.print(table)
+    table = Table(title="Cálculo Óptico Físico Real (Shotlab Optics Engine)")
+    table.add_column("Propriedade", style="cyan", no_wrap=True)
+    table.add_column("Valor Telemetria", style="bold white", no_wrap=True)
+    table.add_column("Unidade / Fórmula", style="dim")
 
-    output_result(optics, render)
+    table.add_row("Distância Focal", f"{focal:.1f}", "mm")
+    table.add_row("Abertura da Lente", f"f/{fstop:.1f}", "f-stop")
+    table.add_row("Distância de Foco", f"{focus:.2f}", "m")
+    table.add_row("Dimensões do Sensor", f"{sensor_width:.1f} x {sensor_height:.1f}", "mm (Sensor)")
+    table.add_row("Diagonal do Sensor", f"{opt.get('sensor_diagonal_mm', 0):.2f}", "mm [d = √(w²+h²)]")
+    table.add_row("Círculo de Confusão (CoC)", f"{opt.get('coc_mm', 0):.4f}", "mm [d/1500 Zeiss]")
+    table.add_row(
+        "Campo de Visão (FOV)",
+        f"H: {opt.get('horizontal_fov_deg', 0):.2f}° | V: {opt.get('vertical_fov_deg', 0):.2f}° | Diag: {opt.get('diagonal_fov_deg', 0):.2f}°",
+        "graus sexagesimais",
+    )
+    table.add_row("Distância Hiperfocal", f"{opt.get('hyperfocal_distance_m', 0):.3f}", "m")
 
-# ==========================================
-# RENDER COMMAND
-# ==========================================
+    dof_far = opt.get("dof_far_m")
+    dof_far_str = "∞ (Infinito)" if opt.get("is_infinite_far") or dof_far is None else f"{dof_far:.3f} m"
+    dof_tot = opt.get("dof_total_m")
+    dof_tot_str = "∞ (Infinito)" if opt.get("is_infinite_far") or dof_tot is None else f"{dof_tot:.3f} m"
 
-@app.command("render", help="Dispatch an image generation render job via ComfyUI (Dual-Engine)")
-def render_scene(
-    scene_id: str = typer.Argument(default="scene-default", help="Scene ID to render"),
-    prompt: str = typer.Option(
-        "Commercial editorial studio photography, clean product lighting",
-        "--prompt",
-        "-p",
-        help="Prompt description",
+    table.add_row("DoF Limite Próximo (Near)", f"{opt.get('dof_near_m', 0):.3f}", "m")
+    table.add_row("DoF Limite Distante (Far)", dof_far_str, "m")
+    table.add_row("Profundidade de Campo Total", dof_tot_str, "m")
+
+    console.print(table)
+
+
+# ---------------- Render Command ----------------
+
+
+@app.command("render", help="Despacha renderização neural dual-engine (Qwen Image 2.1 ou MOSS-Image).")
+def render_command(
+    ctx: typer.Context,
+    scene_id: str = typer.Argument(..., help="ID da cena a ser renderizada"),
+    prompt: str = typer.Option(..., "--prompt", "-p", help="Prompt fotográfico descritivo"),
+    engine: str = typer.Option(
+        "qwen-2.1",
+        "--engine",
+        "-e",
+        help="Motor de render: 'qwen-2.1' (diffusion) ou 'moss-image' (layout)",
     ),
-    engine: str = typer.Option("qwen-2.1", "--engine", "-e", help="Engine: qwen-2.1 or moss-image"),
-    steps: int = typer.Option(25, "--steps", help="Inference steps"),
-    denoise: float = typer.Option(0.85, "--denoise", help="Denoising strength"),
-    wait: bool = typer.Option(False, "--wait", "-w", help="Wait for job completion"),
+    steps: int = typer.Option(25, "--steps", help="Número de passos de sampling (1-100)"),
+    denoise: float = typer.Option(0.85, "--denoise", help="Intensidade de denoise (0.1-1.0)"),
+    seed: Optional[int] = typer.Option(None, "--seed", help="Seed determinística"),
+    negative_prompt: Optional[str] = typer.Option(
+        "blurry, low quality, cartoon, deformed, noisy",
+        "--negative-prompt",
+        help="Prompt negativo",
+    ),
+    api_url: Optional[str] = typer.Option(None, "--api-url", help="URL base da API"),
+    json_output: Optional[bool] = typer.Option(None, "--json", help="Saída em JSON"),
 ):
-    client = get_client()
+    url, is_json = resolve_config(ctx, api_url, json_output)
+
+    if engine not in ("qwen-2.1", "moss-image"):
+        err_console.print(
+            f"[bold red]Erro:[/bold red] Motor '{engine}' inválido. Escolha 'qwen-2.1' ou 'moss-image'."
+        )
+        raise typer.Exit(code=1)
+
     payload = {
         "prompt": prompt,
         "engine": engine,
         "steps": steps,
         "denoise": denoise,
+        "seed": seed,
+        "negative_prompt": negative_prompt,
     }
 
-    try:
-        job = client.create_render(scene_id, payload)
-    except ShotlabApiError as e:
-        handle_api_error(e)
+    client = ShotlabClient(api_url=url)
+    res = client.create_render_job(scene_id, payload)
+    job = handle_api_response(res, is_json)
 
-    job_id = job.get("job_id")
+    if is_json:
+        typer.echo(json.dumps(job, indent=2))
+        return
 
-    if wait and job_id:
-        with console.status(f"[bold cyan]Processando render {job_id}...[/bold cyan]"):
-            while True:
-                time.sleep(1.0)
-                try:
-                    status_res = client.get_job(job_id)
-                except ShotlabApiError as e:
-                    handle_api_error(e)
-
-                if status_res.get("status") in ("completed", "failed"):
-                    job = status_res
-                    break
-
-    def render():
-        status = job.get("status")
-        color = "green" if status == "completed" else "yellow" if status == "pending" else "red"
-        console.print(
-            Panel(
-                f"[bold {color}]Status:[/bold {color}] {status.upper()}  |  "
-                f"[bold]Engine:[/bold] {job.get('engine')}  |  "
-                f"[bold]Progresso:[/bold] {job.get('progress')}%\n"
-                f"[bold]Imagem Resultante:[/bold] {job.get('image_url') or 'N/A'}",
-                title=f"Job de Render: {job.get('job_id')}",
-                border_style=color,
-            )
+    console.print(
+        Panel(
+            f"[bold cyan]Job ID:[/bold cyan] {job.get('job_id')}\n"
+            f"[bold white]Cena:[/bold white] {job.get('scene_id')}\n"
+            f"[bold magenta]Motor:[/bold magenta] {job.get('engine')}\n"
+            f"[bold green]Status:[/bold green] {job.get('status')} ({job.get('progress')}%)\n"
+            f"[bold yellow]Prompt:[/bold yellow] {prompt}",
+            title="[bold green]✓ Job de Renderização Despachado com Sucesso[/bold green]",
+            expand=False,
         )
+    )
 
-    output_result(job, render)
+
+def cli_main():
+    app()
+
 
 if __name__ == "__main__":
-    app()
+    cli_main()

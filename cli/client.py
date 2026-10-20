@@ -1,95 +1,130 @@
 import os
+import asyncio
+import concurrent.futures
+from typing import Optional, Dict, Any
 import httpx
-from typing import Dict, Any, List, Optional
 
-class ShotlabApiError(Exception):
-    def __init__(self, message: str, status_code: int = 500, error_code: Optional[str] = None, details: Optional[Dict[str, Any]] = None):
-        super().__init__(message)
-        self.message = message
-        self.status_code = status_code
-        self.error_code = error_code
-        self.details = details or {}
+DEFAULT_API_URL = os.environ.get("SHOTLAB_API_URL", "http://localhost:8000")
+
+_client_transport: Optional[httpx.AsyncBaseTransport] = None
+
+
+def set_client_transport(transport: Optional[httpx.AsyncBaseTransport]) -> None:
+    """Sets an in-memory ASGI transport (e.g., ASGITransport for testing)."""
+    global _client_transport
+    _client_transport = transport
+
+
+def get_client_transport() -> Optional[httpx.AsyncBaseTransport]:
+    """Returns the current ASGI transport if configured."""
+    return _client_transport
+
+
+def run_sync(coro):
+    """
+    Safely executes an async coroutine synchronously,
+    handling existing event loops gracefully.
+    """
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(asyncio.run, coro)
+            return future.result()
+    return asyncio.run(coro)
+
 
 class ShotlabClient:
-    def __init__(self, base_url: Optional[str] = None):
-        self.base_url = (
-            base_url
-            or os.environ.get("SHOTLAB_API")
-            or "http://localhost:8000"
-        ).rstrip("/")
+    """
+    REST API client for Shotlab /v1 endpoints.
+    Uses httpx.AsyncClient internally and executes sync wrappers for CLI integration.
+    """
 
-    def _request(self, method: str, path: str, **kwargs) -> Any:
-        url = f"{self.base_url}{path}"
-        try:
-            with httpx.Client(timeout=10.0) as client:
-                res = client.request(method, url, **kwargs)
-                if not res.is_success:
-                    self._handle_error(res)
-                return res.json()
-        except httpx.ConnectError:
-            raise ShotlabApiError(
-                f"Could not connect to Shotlab API at {self.base_url}. Is the backend running?",
-                status_code=503,
-                error_code="CONNECTION_REFUSED",
+    def __init__(
+        self,
+        api_url: Optional[str] = None,
+        transport: Optional[httpx.AsyncBaseTransport] = None,
+        timeout: float = 60.0,
+    ):
+        base = api_url or os.environ.get("SHOTLAB_API_URL", DEFAULT_API_URL)
+        self.api_url = base.rstrip("/")
+        self.transport = transport if transport is not None else _client_transport
+        self.timeout = timeout
+
+    def _get_async_client(self) -> httpx.AsyncClient:
+        if self.transport is not None:
+            return httpx.AsyncClient(
+                transport=self.transport,
+                base_url=self.api_url,
+                timeout=self.timeout,
             )
-        except httpx.TimeoutException:
-            raise ShotlabApiError(
-                f"Timeout connecting to Shotlab API at {self.base_url}.",
-                status_code=504,
-                error_code="TIMEOUT",
+        return httpx.AsyncClient(
+            base_url=self.api_url,
+            timeout=self.timeout,
+        )
+
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        params: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
+    ) -> httpx.Response:
+        url = f"{self.api_url}{path}"
+        async with self._get_async_client() as client:
+            return await client.request(
+                method=method,
+                url=url,
+                params=params,
+                json=json_data,
             )
 
-    def _handle_error(self, res: httpx.Response):
-        status = res.status_code
-        try:
-            body = res.json()
-        except Exception:
-            body = {"detail": res.text}
+    # ---------------- Scene Operations ----------------
 
-        detail = body.get("detail", res.text)
-        if isinstance(detail, dict):
-            code = detail.get("code", "VALIDATION_ERROR")
-            msg = detail.get("detail", str(detail))
-            raise ShotlabApiError(msg, status_code=status, error_code=code, details=detail)
-        elif isinstance(detail, list):
-            raise ShotlabApiError(str(detail), status_code=status, error_code="INPUT_VALIDATION_ERROR")
-        else:
-            raise ShotlabApiError(str(detail), status_code=status, error_code="API_ERROR")
+    def list_scenes(self) -> httpx.Response:
+        return run_sync(self._request("GET", "/v1/scenes"))
 
-    # Scenes
-    def list_scenes(self) -> List[Dict[str, Any]]:
-        return self._request("GET", "/v1/scenes")
+    def get_scene(self, scene_id: str) -> httpx.Response:
+        return run_sync(self._request("GET", f"/v1/scenes/{scene_id}"))
 
-    def get_scene(self, scene_id: str) -> Dict[str, Any]:
-        return self._request("GET", f"/v1/scenes/{scene_id}")
+    def create_scene(self, name: str = "Nova Sessão Fotográfica") -> httpx.Response:
+        return run_sync(self._request("POST", "/v1/scenes", params={"name": name}))
 
-    def create_scene(self, name: str = "Nova Sessão") -> Dict[str, Any]:
-        return self._request("POST", f"/v1/scenes?name={name}")
+    # ---------------- Object Operations ----------------
 
-    # Objects
-    def add_object(self, scene_id: str, obj_payload: Dict[str, Any]) -> Dict[str, Any]:
-        return self._request("POST", f"/v1/scenes/{scene_id}/objects", json=obj_payload)
+    def add_object(self, scene_id: str, obj_data: Dict[str, Any]) -> httpx.Response:
+        return run_sync(self._request("POST", f"/v1/scenes/{scene_id}/objects", json_data=obj_data))
 
-    def patch_object(self, scene_id: str, object_id: str, patch_payload: Dict[str, Any]) -> Dict[str, Any]:
-        return self._request("PATCH", f"/v1/scenes/{scene_id}/objects/{object_id}", json=patch_payload)
+    def move_object(self, scene_id: str, object_id: str, position: list[float]) -> httpx.Response:
+        return run_sync(
+            self._request(
+                "PATCH",
+                f"/v1/scenes/{scene_id}/objects/{object_id}",
+                json_data={"position": position},
+            )
+        )
 
-    def delete_object(self, scene_id: str, object_id: str) -> Dict[str, Any]:
-        return self._request("DELETE", f"/v1/scenes/{scene_id}/objects/{object_id}")
+    def delete_object(self, scene_id: str, object_id: str) -> httpx.Response:
+        return run_sync(self._request("DELETE", f"/v1/scenes/{scene_id}/objects/{object_id}"))
 
-    # Camera
-    def update_camera(self, scene_id: str, camera_payload: Dict[str, Any]) -> Dict[str, Any]:
-        return self._request("PUT", f"/v1/scenes/{scene_id}/camera", json=camera_payload)
+    # ---------------- Camera Operations ----------------
 
-    # Optics
-    def get_optics(self, scene_id: str) -> Dict[str, Any]:
-        return self._request("GET", f"/v1/optics/scene/{scene_id}")
+    def set_camera(self, scene_id: str, camera_data: Dict[str, Any]) -> httpx.Response:
+        return run_sync(self._request("PUT", f"/v1/scenes/{scene_id}/camera", json_data=camera_data))
 
-    def compute_optics(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        return self._request("POST", "/v1/optics/compute", json=params)
+    # ---------------- Optics Operations ----------------
 
-    # Render
-    def create_render(self, scene_id: str, render_payload: Dict[str, Any]) -> Dict[str, Any]:
-        return self._request("POST", f"/v1/scenes/{scene_id}/render", json=render_payload)
+    def compute_optics(self, optics_data: Dict[str, Any]) -> httpx.Response:
+        return run_sync(self._request("POST", "/v1/optics/compute", json_data=optics_data))
 
-    def get_job(self, job_id: str) -> Dict[str, Any]:
-        return self._request("GET", f"/v1/jobs/{job_id}")
+    # ---------------- Render Operations ----------------
+
+    def create_render_job(self, scene_id: str, render_data: Dict[str, Any]) -> httpx.Response:
+        return run_sync(self._request("POST", f"/v1/scenes/{scene_id}/render", json_data=render_data))
+
+    def get_job_status(self, job_id: str) -> httpx.Response:
+        return run_sync(self._request("GET", f"/v1/jobs/{job_id}"))
