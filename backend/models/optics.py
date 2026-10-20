@@ -57,6 +57,11 @@ class OpticsComputeRequest(BaseModel):
     coc_divisor: float = Field(default=1500.0, ge=100.0, le=5000.0)
 
 class OpticsComputeResponse(BaseModel):
+    focal_length_mm: float = 50.0
+    f_stop: float = 2.8
+    focus_distance_m: float = 2.5
+    sensor_width_mm: float = 36.0
+    sensor_height_mm: float = 24.0
     sensor_diagonal_mm: float
     coc_mm: float
     vertical_fov_deg: float
@@ -215,6 +220,11 @@ def compute_full_optics(req: OpticsComputeRequest) -> OpticsComputeResponse:
     dof = calculate_depth_of_field_m(req.focal_length_mm, req.f_stop, req.focus_distance_m, coc)
 
     return OpticsComputeResponse(
+        focal_length_mm=req.focal_length_mm,
+        f_stop=req.f_stop,
+        focus_distance_m=req.focus_distance_m,
+        sensor_width_mm=req.sensor_width_mm,
+        sensor_height_mm=req.sensor_height_mm,
         sensor_diagonal_mm=diag,
         coc_mm=coc,
         vertical_fov_deg=v_fov,
