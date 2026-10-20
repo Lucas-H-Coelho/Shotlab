@@ -100,23 +100,25 @@ class LightSourceModel(BaseModel):
     color: str = Field(default="#ffffff")
     position: List[float] = Field(default=[0.0, 2.0, 0.0])
     cast_shadow: bool = Field(default=False)
+    kelvin: Optional[int] = Field(default=None, description="Color temperature in Kelvin (e.g. 5600, 3200)")
+    modifier: Optional[str] = Field(default=None, description="Modifier ID (e.g. softbox_60x90, octabox_120)")
 
 class StudioLightingModel(BaseModel):
     ambient_intensity: float = Field(default=0.35, ge=0.0, le=2.0)
     ambient_color: str = Field(default="#ffffff")
     key_light: LightSourceModel = Field(
         default_factory=lambda: LightSourceModel(
-            intensity=1.6, color="#fffbf0", position=[2.5, 3.0, 2.5], cast_shadow=True
+            intensity=1.6, color="#fffbf0", position=[2.5, 3.0, 2.5], cast_shadow=True, kelvin=5600, modifier="softbox_60x90"
         )
     )
     fill_light: LightSourceModel = Field(
         default_factory=lambda: LightSourceModel(
-            intensity=0.7, color="#e8f0fe", position=[-2.5, 2.0, 2.0]
+            intensity=0.7, color="#e8f0fe", position=[-2.5, 2.0, 2.0], kelvin=5600, modifier="octabox_120"
         )
     )
     rim_light: LightSourceModel = Field(
         default_factory=lambda: LightSourceModel(
-            intensity=1.2, color="#ffffff", position=[0.0, 2.8, -2.5]
+            intensity=1.2, color="#ffffff", position=[0.0, 2.8, -2.5], kelvin=5600, modifier="stripbox_30x140"
         )
     )
 
