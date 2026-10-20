@@ -69,6 +69,28 @@ class CameraModel(BaseModel):
         rad = 2.0 * math.atan(self.sensor_width_mm / (2.0 * self.focal_length_mm))
         return math.degrees(rad)
 
+    def calculate_circle_of_confusion(self, divisor: float = 1500.0) -> float:
+        """Returns circle of confusion (CoC) in mm derived from sensor dimensions."""
+        from models.optics import calculate_circle_of_confusion_mm
+        return calculate_circle_of_confusion_mm(self.sensor_width_mm, self.sensor_height_mm, divisor=divisor)
+
+    def calculate_diagonal_fov(self) -> float:
+        """Returns diagonal Field of View in degrees."""
+        from models.optics import calculate_diagonal_fov_deg
+        return calculate_diagonal_fov_deg(self.focal_length_mm, self.sensor_width_mm, self.sensor_height_mm)
+
+    def calculate_hyperfocal_distance(self, divisor: float = 1500.0) -> float:
+        """Returns hyperfocal distance in meters."""
+        from models.optics import calculate_hyperfocal_distance_m
+        coc = self.calculate_circle_of_confusion(divisor=divisor)
+        return calculate_hyperfocal_distance_m(self.focal_length_mm, self.f_stop, coc)
+
+    def calculate_depth_of_field(self, divisor: float = 1500.0):
+        """Returns DepthOfFieldResult in meters."""
+        from models.optics import calculate_depth_of_field_m
+        coc = self.calculate_circle_of_confusion(divisor=divisor)
+        return calculate_depth_of_field_m(self.focal_length_mm, self.f_stop, self.focus_distance_m, coc)
+
 class LightSourceModel(BaseModel):
     intensity: float = Field(default=1.0, ge=0.0)
     color: str = Field(default="#ffffff")

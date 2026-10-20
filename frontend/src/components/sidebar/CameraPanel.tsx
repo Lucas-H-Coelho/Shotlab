@@ -2,7 +2,14 @@ import React from 'react';
 import { Camera, Focus, Sliders, Compass } from 'lucide-react';
 import { useStudioStore } from '../../store/useStudioStore';
 import { useTranslation } from '../../i18n';
-import { calculateHorizontalFov, calculateVerticalFov } from '../../types/scene';
+import {
+  SENSOR_PRESETS,
+  calculateCircleOfConfusionMm,
+  calculateVerticalFovDeg,
+  calculateHorizontalFovDeg,
+  calculateDiagonalFovDeg,
+  calculateDepthOfFieldM,
+} from '../../utils/optics';
 
 export const CameraPanel: React.FC = () => {
   const camera = useStudioStore((state) => state.camera);
@@ -20,6 +27,8 @@ export const CameraPanel: React.FC = () => {
 
   const fStopPresets = [1.4, 1.8, 2.8, 4.0, 5.6, 8.0, 11, 16];
 
+  const sensorPresets = Object.values(SENSOR_PRESETS);
+
   const aspectRatios = [
     { label: '3:2', value: 3 / 2, desc: t.camera.presets.fullFrame },
     { label: '1:1', value: 1, desc: t.camera.presets.square },
@@ -28,8 +37,15 @@ export const CameraPanel: React.FC = () => {
     { label: '9:16', value: 9 / 16, desc: t.camera.presets.vertical },
   ];
 
-  const vFov = calculateVerticalFov(camera.focalLengthMm, camera.sensorHeightMm).toFixed(1);
-  const hFov = calculateHorizontalFov(camera.focalLengthMm, camera.sensorWidthMm).toFixed(1);
+  const cocMm = calculateCircleOfConfusionMm(camera.sensorWidthMm, camera.sensorHeightMm);
+  const vFov = calculateVerticalFovDeg(camera.focalLengthMm, camera.sensorHeightMm).toFixed(1);
+  const hFov = calculateHorizontalFovDeg(camera.focalLengthMm, camera.sensorWidthMm).toFixed(1);
+  const dFov = calculateDiagonalFovDeg(camera.focalLengthMm, camera.sensorWidthMm, camera.sensorHeightMm).toFixed(1);
+  const dof = calculateDepthOfFieldM(camera.focalLengthMm, camera.fStop, camera.focusDistanceM, cocMm);
+  const hyperfocalM = dof.hyperfocalM.toFixed(2);
+  const nearLimitM = dof.nearLimitM.toFixed(2);
+  const farLimitDisplay = dof.isHyperfocal || !Number.isFinite(dof.farLimitM) ? t.camera.infinite : `${dof.farLimitM.toFixed(2)} m`;
+  const totalDofDisplay = dof.isHyperfocal || !Number.isFinite(dof.totalDofM) ? t.camera.infinite : `${dof.totalDofM.toFixed(2)} m`;
 
   return (
     <div className="flex flex-col space-y-4 text-xs p-3.5 text-secondary-text">
@@ -39,6 +55,42 @@ export const CameraPanel: React.FC = () => {
         <h2 className="font-semibold text-primary-text tracking-wider text-[10px] uppercase font-mono">
           {t.camera.title}
         </h2>
+      </div>
+
+      {/* Sensor Format Presets */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] uppercase font-mono tracking-wider text-primary-text font-medium block">
+          {t.camera.sensorPreset}
+        </label>
+        <div className="grid grid-cols-2 gap-1">
+          {sensorPresets.map((preset) => {
+            const active =
+              Math.abs(camera.sensorWidthMm - preset.widthMm) < 0.1 &&
+              Math.abs(camera.sensorHeightMm - preset.heightMm) < 0.1;
+            return (
+              <button
+                key={preset.id}
+                onClick={() =>
+                  updateCamera({
+                    sensorWidthMm: preset.widthMm,
+                    sensorHeightMm: preset.heightMm,
+                    aspectRatio: preset.widthMm / preset.heightMm,
+                  })
+                }
+                className={`px-1.5 py-1 rounded-sm text-[10px] font-mono border text-left transition-all ${
+                  active
+                    ? 'bg-optic/15 border-optic text-optic font-semibold shadow-sm'
+                    : 'bg-elevated border-hairline text-secondary-text hover:text-primary-text hover:bg-interactive-hover'
+                }`}
+              >
+                <div className="truncate font-medium">{preset.name}</div>
+                <div className="text-[8px] text-muted-text tabular-nums">
+                  {preset.widthMm}x{preset.heightMm}mm
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Focal Length Section */}
@@ -85,19 +137,51 @@ export const CameraPanel: React.FC = () => {
       </div>
 
       {/* Optical Math Calculated Card */}
-      <div className="bg-surface rounded-sm p-2.5 border border-hairline space-y-1.5">
+      <div className="bg-surface rounded-sm p-2.5 border border-hairline space-y-2">
         <div className="flex items-center space-x-1.5 text-[10px] text-muted-text uppercase font-mono tracking-wider">
           <Compass className="w-3 h-3 text-optic" />
           <span>{t.camera.realOptics}</span>
         </div>
-        <div className="grid grid-cols-2 gap-1.5 pt-0.5">
-          <div className="bg-elevated p-2 rounded-sm border border-hairline">
-            <div className="text-[9px] text-muted-text uppercase font-mono">{t.camera.vFov}</div>
+
+        {/* FOV Telemetry */}
+        <div className="grid grid-cols-3 gap-1 pt-0.5">
+          <div className="bg-elevated p-1.5 rounded-sm border border-hairline">
+            <div className="text-[8px] text-muted-text uppercase font-mono">{t.camera.vFov}</div>
             <div className="text-primary-text font-mono tabular-nums text-xs font-semibold">{vFov}°</div>
           </div>
-          <div className="bg-elevated p-2 rounded-sm border border-hairline">
-            <div className="text-[9px] text-muted-text uppercase font-mono">{t.camera.hFov}</div>
+          <div className="bg-elevated p-1.5 rounded-sm border border-hairline">
+            <div className="text-[8px] text-muted-text uppercase font-mono">{t.camera.hFov}</div>
             <div className="text-primary-text font-mono tabular-nums text-xs font-semibold">{hFov}°</div>
+          </div>
+          <div className="bg-elevated p-1.5 rounded-sm border border-hairline">
+            <div className="text-[8px] text-muted-text uppercase font-mono">FOV Diag</div>
+            <div className="text-primary-text font-mono tabular-nums text-xs font-semibold">{dFov}°</div>
+          </div>
+        </div>
+
+        {/* Hyperfocal & DoF Telemetry */}
+        <div className="pt-1 border-t border-hairline space-y-1">
+          <div className="flex justify-between items-center text-[10px] font-mono">
+            <span className="text-muted-text uppercase">{t.camera.hyperfocal} (H):</span>
+            <span className="text-primary-text font-semibold tabular-nums">{hyperfocalM} m</span>
+          </div>
+          <div className="grid grid-cols-2 gap-1 pt-0.5">
+            <div className="bg-elevated p-1.5 rounded-sm border border-hairline">
+              <div className="text-[8px] text-muted-text uppercase font-mono">{t.camera.nearLimit}</div>
+              <div className="text-primary-text font-mono tabular-nums text-[11px] font-semibold">{nearLimitM} m</div>
+            </div>
+            <div className="bg-elevated p-1.5 rounded-sm border border-hairline">
+              <div className="text-[8px] text-muted-text uppercase font-mono">{t.camera.farLimit}</div>
+              <div className="text-primary-text font-mono tabular-nums text-[11px] font-semibold">{farLimitDisplay}</div>
+            </div>
+          </div>
+          <div className="flex justify-between items-center text-[9px] font-mono text-muted-text pt-0.5">
+            <span>{t.camera.totalDof}:</span>
+            <span className="text-optic font-semibold tabular-nums">{totalDofDisplay}</span>
+          </div>
+          <div className="flex justify-between items-center text-[8px] font-mono text-muted-text">
+            <span>{t.camera.coc}:</span>
+            <span className="tabular-nums">{cocMm.toFixed(4)} mm</span>
           </div>
         </div>
       </div>

@@ -68,16 +68,16 @@ export interface SceneGraph {
   objects: SceneObject[];
 }
 
-/**
- * Optical calculations for real-world camera lens
- */
-export function calculateVerticalFov(focalLengthMm: number, sensorHeightMm: number = 24.0): number {
-  // FOV = 2 * arctan(sensorHeight / (2 * focalLength)) in radians
-  const rad = 2 * Math.atan(sensorHeightMm / (2 * focalLengthMm));
-  return (rad * 180) / Math.PI;
-}
+export {
+  SENSOR_PRESETS,
+  calculateCircleOfConfusionMm,
+  calculateVerticalFovDeg,
+  calculateHorizontalFovDeg,
+  calculateDiagonalFovDeg,
+  calculateHyperfocalDistanceM,
+  calculateDepthOfFieldM,
+  calculateVerticalFov,
+  calculateHorizontalFov,
+} from '../utils/optics';
+export type { SensorPreset, SensorPresetKey, DepthOfFieldResult } from '../utils/optics';
 
-export function calculateHorizontalFov(focalLengthMm: number, sensorWidthMm: number = 36.0): number {
-  const rad = 2 * Math.atan(sensorWidthMm / (2 * focalLengthMm));
-  return (rad * 180) / Math.PI;
-}
